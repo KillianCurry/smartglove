@@ -10,7 +10,8 @@
 extern "C" {
 #endif
 
-	SMARTGLOVE_API int hello();
+	SMARTGLOVE_API bool openPort(int portNum);
+	SMARTGLOVE_API char* getData();
 
 #ifdef __cplusplus
 }
