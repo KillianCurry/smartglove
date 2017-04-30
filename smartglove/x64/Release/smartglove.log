@@ -1,7 +1,9 @@
 ﻿  smartglove.cpp
-  SerialPort.cpp
-     Creating library H:\Part 4\FYP\smartglove\x64\Release\smartglove.lib and object H:\Part 4\FYP\smartglove\x64\Release\smartglove.exp
+     Creating library C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.lib and object C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.exp
   Generating code
-  All 12 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  1 of 12 functions ( 8.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  smartglove.vcxproj -> H:\Part 4\FYP\smartglove\x64\Release\smartglove.dll
+  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.dll
+  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.pdb (Full PDB)

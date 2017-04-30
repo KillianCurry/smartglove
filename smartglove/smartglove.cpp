@@ -9,8 +9,6 @@
 using std::cout;
 using std::endl;
 
-//String for incoming data
-char incomingData[MAX_DATA_LENGTH];
 
 #ifdef SMARTGLOVE_EXPORTS
 #define SMARTGLOVE_API __declspec(dllexport)
@@ -38,10 +36,18 @@ extern "C" {
 
 	SMARTGLOVE_API char* getData()
 	{
-		//Check if data has been read or not
-		int read_result = serial->readSerialPort(incomingData, MAX_DATA_LENGTH);
-		//prints out data
-		return(incomingData);
+		//String for incoming data
+		char incomingData[MAX_DATA_LENGTH];
+		//read data
+		serial->readSerialPort(incomingData, MAX_DATA_LENGTH);
+		//make char buffer for marshaler to use
+		char* buffer = NULL;
+		size_t bufferSize = strlen(incomingData) + sizeof(char);
+		buffer = (char*)::CoTaskMemAlloc(bufferSize);
+		//copy string to managed buffer
+		strcpy_s(buffer, bufferSize, incomingData);
+		//return managed buffer
+		return(buffer);
 	}
 
 #ifdef __cplusplus
