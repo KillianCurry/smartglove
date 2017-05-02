@@ -11,7 +11,9 @@ extern "C" {
 #endif
 
 	SMARTGLOVE_API bool openPort(int portNum);
-	SMARTGLOVE_API char* getData();
+	SMARTGLOVE_API void closePort();
+	SMARTGLOVE_API double* getData();
+	SMARTGLOVE_API int releaseLine(double* line);
 
 #ifdef __cplusplus
 }
