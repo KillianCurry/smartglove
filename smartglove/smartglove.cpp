@@ -21,23 +21,37 @@ using std::endl;
 extern "C" {
 #endif
 	SerialPort *serial;
-	//the values on the current line of data
+	//the raw values on the current line of data
 	std::vector<double> lineValues;
+	//the raw values on the last line of data
+	std::vector<double> lastValues;
+	//the processed values from the last line of data
+	std::vector<double> calibratedValues;
+	//the minimum and maximum raw values
+	std::vector<double> minValues;
+	std::vector<double> maxValues;
+	//whether there's a calibration available for the given sensor value
+	std::vector<bool> isCalibrated;
 	//a string to store the current number
 	char curString[MAX_DATA_LENGTH];
 	//the current character index, to build the string
 	int curChar = 0;
 
+	
 	SMARTGLOVE_API bool openPort(int portNum)
 	{
-		/*Portname must contain these backslashes, and remember to
-		replace the following com port*/
+		//TODO idiot-proof this function
+		//backslashes make port name safe for double-digit numbers
 		char *portPrefix = "\\\\.\\COM";
 		
+		//combine the port prefix with the given port number
 		char portName[20] = "";
 		snprintf(portName, 20, "%s%i", portPrefix, portNum);
+
+		//create a new SerialPort to open the port
 		serial = new SerialPort(portName);
 
+		//return true if the serial port opened properly
 		return serial->isConnected();
 	}
 
@@ -51,8 +65,6 @@ extern "C" {
 		//read the contents of the serial port
 		char incomingData[MAX_DATA_LENGTH];
 		serial->readSerialPort(incomingData, MAX_DATA_LENGTH);
-		//vector of latest values from the serial port
-		std::vector<double> latestLine;
 		//iterate through the data
 		int c = 0;
 		while (incomingData[c] != '\0')
@@ -60,7 +72,7 @@ extern "C" {
 			//on a linebreak, process the line of values
 			if (incomingData[c] == '\n')
 			{
-				latestLine = lineValues;
+				lastValues = lineValues;
 				//clear the vector
 				lineValues.clear();
 			}
@@ -83,8 +95,18 @@ extern "C" {
 			}
 			c++;
 		}
+
+		calibratedValues.clear();
+		for (int i = 0; i < lastValues.size(); i++)
+		{
+			//if this sensor has been calibrated, constrain the sensor value
+			//into a range of zero to one. otherwise send zero.
+			if (isCalibrated.size() >= i + 1 && isCalibrated[i]) calibratedValues.push_back((lastValues[i] - minValues[i]) / (maxValues[i] - minValues[i]));
+			else calibratedValues.push_back(0);
+		}
+
 		//return a pointer to the last line that was read
-		return latestLine.data();
+		return calibratedValues.data();
 	}
 
 	//release the pointer for the latest line, preventing memory leaks
@@ -92,6 +114,38 @@ extern "C" {
 	{
 		delete[] line;
 		return 0;
+	}
+
+	void calibrateMinimum()
+	{
+		//clear previous values, if any
+		minValues.clear();
+		//loop through current raw sensor values
+		for (int i = 0; i < lastValues.size(); i++)
+		{
+			//set minimum to current value
+			minValues.push_back(lastValues[i]);
+		}
+	}
+
+	void calibrateMaximum()
+	{
+		//clear previous values, if any
+		maxValues.clear();
+		//loop through current raw sensor values
+		for (int i = 0; i < lastValues.size(); i++)
+		{
+			//populate vector as we go
+			maxValues.push_back(0);
+			isCalibrated.push_back(false);
+			//if the maximum is different from the minimum,
+			//update max and complete calibration for that sensor
+			if (lastValues[i] != minValues[i])
+			{
+				maxValues[i] = lastValues[i];
+				isCalibrated[i] = true;
+			}
+		}
 	}
 
 #ifdef __cplusplus

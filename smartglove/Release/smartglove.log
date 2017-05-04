@@ -1,0 +1,11 @@
+﻿  smartglove.cpp
+smartglove.cpp(92): warning C4018: '<': signed/unsigned mismatch
+smartglove.cpp(112): warning C4018: '<': signed/unsigned mismatch
+smartglove.cpp(121): warning C4018: '<': signed/unsigned mismatch
+  SerialPort.cpp
+     Creating library C:\Users\Killian\Desktop\Uni\Project\smartglove\Release\smartglove.lib and object C:\Users\Killian\Desktop\Uni\Project\smartglove\Release\smartglove.exp
+  Generating code
+  All 188 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\Release\smartglove.dll
+  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\Release\smartglove.pdb (Full PDB)
