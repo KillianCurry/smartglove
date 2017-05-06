@@ -34,6 +34,8 @@ extern "C" {
 	std::vector<bool> isCalibrated;
 	//a string to store the current number
 	char curString[MAX_DATA_LENGTH];
+	//a string to store the raw serial data
+	char incomingData[MAX_DATA_LENGTH];
 	//the current character index, to build the string
 	int curChar = 0;
 
@@ -63,7 +65,6 @@ extern "C" {
 	SMARTGLOVE_API double* getData()
 	{
 		//read the contents of the serial port
-		char incomingData[MAX_DATA_LENGTH];
 		serial->readSerialPort(incomingData, MAX_DATA_LENGTH);
 		//iterate through the data
 		int c = 0;
@@ -93,15 +94,20 @@ extern "C" {
 				curString[curChar] = incomingData[c];
 				curChar++;
 			}
+			//delete the string behind as we go
+			incomingData[c] = '\0';
 			c++;
 		}
 
 		calibratedValues.clear();
+		calibratedValues.push_back(lastValues[0]);
+		calibratedValues.push_back(lastValues[1]);
+		calibratedValues.push_back(lastValues[2]);
 		for (int i = 0; i < lastValues.size(); i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
-			if (isCalibrated.size() >= i + 1 && isCalibrated[i]) calibratedValues.push_back((lastValues[i] - minValues[i]) / (maxValues[i] - minValues[i]));
+			if (isCalibrated.size() >= i + 1 && isCalibrated[i]) calibratedValues.push_back((lastValues[i + 3] - minValues[i]) / (maxValues[i] - minValues[i]));
 			else calibratedValues.push_back(0);
 		}
 
@@ -116,33 +122,33 @@ extern "C" {
 		return 0;
 	}
 
-	void calibrateMinimum()
+	SMARTGLOVE_API void calibrateMinimum()
 	{
 		//clear previous values, if any
 		minValues.clear();
 		//loop through current raw sensor values
-		for (int i = 0; i < lastValues.size(); i++)
+		for (int i = 0; i < 10; i++)
 		{
 			//set minimum to current value
-			minValues.push_back(lastValues[i]);
+			minValues.push_back(lastValues[i+3]);
 		}
 	}
 
-	void calibrateMaximum()
+	SMARTGLOVE_API void calibrateMaximum()
 	{
 		//clear previous values, if any
 		maxValues.clear();
 		//loop through current raw sensor values
-		for (int i = 0; i < lastValues.size(); i++)
+		for (int i = 0; i < 10; i++)
 		{
 			//populate vector as we go
 			maxValues.push_back(0);
 			isCalibrated.push_back(false);
 			//if the maximum is different from the minimum,
 			//update max and complete calibration for that sensor
-			if (lastValues[i] != minValues[i])
+			if (lastValues[i+3] != minValues[i])
 			{
-				maxValues[i] = lastValues[i];
+				maxValues[i] = lastValues[i+3];
 				isCalibrated[i] = true;
 			}
 		}

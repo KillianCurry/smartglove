@@ -28,6 +28,8 @@ public class HandController:MonoBehaviour
 	
 	//list of each joint's rotation
 	private List<double> fingerRotations;
+	//vector of the x, y, and z rotation
+	private Vector3 palmOrientation;
 	
 	//what com port is the arduino connected to?
 	public int portNumber = 0;
@@ -96,10 +98,11 @@ public class HandController:MonoBehaviour
 	
 	void Update()
 	{
-		//update joint angles to match input
+		//update joint angles and palm orientation to match input
 		for (int r = 0; r < fingerRotations.Count; r++)
 		{
 			joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], 0f, 0f);
+			this.transform.localRotation = Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 		}
 	}
 	
@@ -109,26 +112,31 @@ public class HandController:MonoBehaviour
 		while(true)
 		{
 			//copy data from the DLL's unmanaged memory into a managed array
-			double[] data = new double[10];
+			double[] data = new double[13];
 			IntPtr ptr = readPort();
 			Marshal.Copy(ptr, data, 0, 10);
 			
-			//loop through the calibrated data
-			int i = 0;
-			foreach (double v in data)
+			//copy the orientation data (y and z negated to remove mirroring)
+			palmOrientation = new Vector3((float)data[1], -(float)data[0], -(float)data[2]);
+			
+			//loop through the calibrated finger rotation data
+			int i = 3;
+			for (int v = 3; v < 13; v++)
 			{
 				//currently support is only available for joints 0, 1, 3, 4, 6, 7, 9, and 10.
-				if (i >= 12) continue;
+				if (i >= 15) continue;
 				//for the first joint, take the 0-1 value as 0-90 degrees
 				if (i % 3 == 0)
 				{
-					fingerRotations[i] = v*90f;
+					fingerRotations[i-3] = data[v]*90f;
+					if (data[v] == 0d) fingerRotations[i-3] = 90f;
 					i += 1;
 				}
 				//for the second joint, split the 0-1 value across the second and third joint
 				else
 				{
-					fingerRotations[i] = fingerRotations[i+1] = v*45f;
+					fingerRotations[i-3] = fingerRotations[i-2] = data[v]*45f;
+					if (data[v] == 0d) fingerRotations[i-3] = fingerRotations[i-2] = 45f;
 					i += 2;
 				}
 			}
