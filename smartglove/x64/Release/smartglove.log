@@ -1,9 +1,0 @@
-﻿  smartglove.cpp
-     Creating library C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.lib and object C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.exp
-  Generating code
-  5 of 245 functions ( 2.0%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
-  Finished generating code
-  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.dll
-  smartglove.vcxproj -> C:\Users\Killian\Desktop\Uni\Project\smartglove\x64\Release\smartglove.pdb (Full PDB)
