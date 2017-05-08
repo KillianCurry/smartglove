@@ -132,10 +132,28 @@ extern "C" {
 			//set minimum to current value
 			minValues.push_back(lastValues[i+3]);
 		}
+		//set up maximum calibration vector
+		maxValues.clear();
+
+		for (int a = 0; a < 10; a++)
+		{
+			//populate vector as we go
+			maxValues.push_back(0);
+			isCalibrated.push_back(false);
+		}
 	}
 
-	SMARTGLOVE_API void calibrateMaximum()
+	SMARTGLOVE_API void calibrateMaximum(int sensor)
 	{
+		//if the maximum is different from the minimum,
+		//update max and complete calibration for that sensor
+		if (lastValues[sensor + 3] != minValues[sensor])
+		{
+			maxValues[sensor] = lastValues[sensor + 3];
+			isCalibrated[sensor] = true;
+		}
+
+		/*code to calibrate all at once
 		//clear previous values, if any
 		maxValues.clear();
 		//loop through current raw sensor values
@@ -151,7 +169,7 @@ extern "C" {
 				maxValues[i] = lastValues[i+3];
 				isCalibrated[i] = true;
 			}
-		}
+		}*/
 	}
 
 #ifdef __cplusplus

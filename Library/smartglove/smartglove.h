@@ -46,7 +46,7 @@ extern "C" {
 		If the lower bound matches the upper bound,
 		the sensor is not considered calibrated.
 	*/
-	SMARTGLOVE_API void calibrateMaximum();
+	SMARTGLOVE_API void calibrateMaximum(int sensor);
 
 #ifdef __cplusplus
 }
