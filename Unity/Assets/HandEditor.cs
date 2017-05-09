@@ -8,7 +8,6 @@ public class HandEditor:Editor
 {
 	bool connected = false;
 	bool minCalibrated = false;
-	bool fold = false;
 	
 	public override void OnInspectorGUI()
 	{

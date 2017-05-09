@@ -21,8 +21,13 @@ public class HandController:MonoBehaviour
 	//how many segments in a finger?
 	private int fingerSegments = 3;
 	
+	//is there one sensor per finger?
+	public bool fiveSensor = false;
+	//is this a right hand?
+	public bool isRightHand = true;
+	
 	//list of each joint's rotation
-	private List<double> fingerRotations;
+	public List<double> fingerRotations;
 	//vector of the x, y, and z rotation
 	private Vector3 palmOrientation;
 	
@@ -45,6 +50,7 @@ public class HandController:MonoBehaviour
 	[DllImport("smartglove", EntryPoint="calibrateMaximum")]
 	public static extern void calibrateMaximum(int sensor);
 	
+	//TODO support for multiple tinyTILES
 	
 	public bool SerialConnect()
 	{
@@ -90,8 +96,7 @@ public class HandController:MonoBehaviour
 		fingerLengths.Add(0.2f);
 		fingerLengths.Add(0.15f);
 		
-		
-		GenerateGeometry();
+		GenerateHand(isRightHand);
 	}
 	
 	void Update()
@@ -103,6 +108,16 @@ public class HandController:MonoBehaviour
 			joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], 0f, 0f);
 		}
 		this.transform.localRotation = Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
+	}
+	
+	void OnDrawGizmos()
+	{
+		if (!Application.isPlaying) return;
+		Gizmos.color = Color.black;
+		foreach (GameObject e in joints)
+		{
+			Gizmos.DrawSphere(e.transform.position, 0.02f);
+		}
 	}
 	
 	//coroutine to read data from arduino into fingerRotations, avoiding lag from waiting to read serial
@@ -118,6 +133,7 @@ public class HandController:MonoBehaviour
 			//copy the orientation data (y and z negated to remove mirroring)
 			palmOrientation = new Vector3((float)data[1], -(float)data[0], -(float)data[2]);
 			
+			//TODO more robust matching of sensors to finger representation
 			//loop through the calibrated finger rotation data
 			int i = 3;
 			for (int v = 3; v < 13; v++)
@@ -126,12 +142,13 @@ public class HandController:MonoBehaviour
 				if (i % 3 == 0)
 				{
 					fingerRotations[i-3] = data[v]*90f;
+					if (fiveSensor) fingerRotations[i-2] = fingerRotations[i-1] = data[v]*90f;
 					i += 1;
 				}
 				//for the second joint, split the 0-1 value across the second and third joint
 				else
 				{
-					fingerRotations[i-3] = fingerRotations[i-2] = data[v]*45f;
+					if (!fiveSensor) fingerRotations[i-3] = fingerRotations[i-2] = data[v]*45f;
 					i += 2;
 				}
 			}
@@ -142,8 +159,10 @@ public class HandController:MonoBehaviour
 		}
 	}
 	
-	void GenerateGeometry()
+	void GenerateHand(bool right)
 	{
+		//TODO final pass of hand generation for tidiness
+		int sign = right ? 1 : -1;
 		fingerRotations = new List<double>();
 		
 		//create the palm geometry, a cube
@@ -153,107 +172,68 @@ public class HandController:MonoBehaviour
 		//scale to match specifications
 		obj.transform.localScale = new Vector3(palmWidth, palmHeight, palmLength);
 		//child to the heirarchy root
-		obj.transform.parent = this.transform;
+		obj.transform.SetParent(this.transform, false);
 		
-		//gameobject to store the joint
-		GameObject empty;
 		//previous joint transform to use as the parent of the next joint in a finger
 		Transform prev;
-		//how long a finger segment should be
-		float length;
-		
-		//number of fingers on the hand based on how many segments are given and how many segments are in a finger
-		int fingers = fingerLengths.Count / fingerSegments - 1;
-		//the width of a single finger
-		float divWidth = palmWidth / (float)fingers;
 		
 		joints = new List<GameObject>();
 		
-		//TODO roll thumb generation into main loop with exception for 0,0
-		//generate thumb geometry
-		//first joint
+		//generate first thumb joint
 		fingerRotations.Add(0d);
-		empty = new GameObject("joint0_0");
-		empty.transform.parent = this.transform;
-		empty.transform.localPosition = new Vector3(0f, 0f, -palmLength/2f);
+		GameObject empty = new GameObject("joint0_0");
+		empty.transform.localPosition = new Vector3(sign*-palmWidth/4f, 0f, -fingerLengths[0]);
+		empty.transform.localRotation = Quaternion.Euler(0f, -45f, 0f);
+		empty.transform.SetParent(this.transform, false);
 		joints.Add(empty);
 		prev = empty.transform;
-		//first geometry
+		
 		obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 		obj.name = "finger0_0";
 		obj.transform.localScale = new Vector3(palmWidth/2f, palmHeight, fingerLengths[0]);
-		obj.transform.parent = empty.transform;
-		obj.transform.localPosition = new Vector3(-palmWidth/2f, 0f, fingerLengths[0]/2f);
-		//second joint
-		fingerRotations.Add(0d);
-		empty = new GameObject("joint0_1");
-		empty.transform.parent = prev;
-		empty.transform.localPosition = new Vector3(-5f*palmWidth/8f, 0f, fingerLengths[0]/2f);
-		joints.Add(empty);
-		prev = empty.transform;
-		//second geometry
-		obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		obj.name = "finger0_1";
-		obj.transform.localScale = new Vector3(palmWidth/4f, palmHeight, fingerLengths[1]);
-		obj.transform.parent = empty.transform;
-		obj.transform.localPosition = new Vector3(0f, 0f, fingerLengths[1]/2f);
-		//third joint
-		fingerRotations.Add(0d);
-		empty = new GameObject("joint0_2");
-		empty.transform.parent = prev;
-		empty.transform.localPosition = new Vector3(0f, 0f, fingerLengths[1]);
-		joints.Add(empty);
-		//third geometry
-		obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		obj.name = "finger0_2";
-		obj.transform.localScale = new Vector3(palmWidth/4f, palmHeight, fingerLengths[2]);
-		obj.transform.parent = empty.transform;
-		obj.transform.localPosition = new Vector3(0f, 0f, fingerLengths[2]/2f);
+		obj.transform.localPosition = new Vector3(sign*-palmWidth/4f, 0f, fingerLengths[0]/2f);
+		obj.transform.SetParent(empty.transform, false);
 		
-		//loop for fingers
-		for (int i = 0; i < fingers; i++)
+		//generate rest of thumb
+		prev = AddJoint(prev, new Vector3(sign*-3f*palmWidth/8f, 0f, fingerLengths[0]), 0, 1);
+		prev = AddSegment(0, 1, prev);
+		AddSegment(0, 2, prev);
+		
+		//generate fingers
+		for (int i = 1; i < 5; i++)
 		{
-			prev = this.transform;
-			//create empty finger base joint for rotation
-			fingerRotations.Add(0d);
-			empty = new GameObject("joint" + (i+1).ToString() + "_" + "0");
-			empty.transform.parent = this.transform;
-			//position finger base
-			empty.transform.localPosition = new Vector3(((float)i * divWidth) - ((palmWidth / 2f) - (divWidth / 2f)), 0f, 0.5f);
-			//add to joints list for future manipulation
-			joints.Add(empty);
-			//parent the next joint to this
-			prev = empty.transform;
-			//loop for segments
-			for (int j = 0; j < fingerSegments; j++)
+			prev = AddJoint(this.transform, new Vector3(sign*(((float)(i-1) * (palmWidth/4f)) - ((palmWidth / 2f) - (palmWidth / 8f))), 0f, palmLength / 2f), i, 0);
+			for (int j = 0; j < 3; j++)
 			{
-				//finger_segment to distinguish joints in the named hierarchy
-				string suffix = (i+1).ToString() + "_" + j.ToString();
-				//create finger geometry to child to the joint
-				length = fingerLengths[(i+1)*3+j];
-				obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-				//name the geometry so it's easily identifiable in the inspector
-				obj.name = "finger" + suffix;
-				//size the geometry based on given parameters
-				obj.transform.localScale = new Vector3(divWidth, palmHeight, length);
-				//child to the joint
-				obj.transform.parent = empty.transform;
-				//position end at joint so it rotates around the joint
-				obj.transform.localPosition = new Vector3(0f, 0f, length/2f);
-				
-				//create next joint
-				if (j < fingerSegments-1)
-				{
-					empty = new GameObject("joint" + suffix);
-					empty.transform.parent = prev;
-					empty.transform.localPosition = new Vector3(0f, 0f, length);
-					joints.Add(empty);
-					prev = empty.transform;
-					fingerRotations.Add(0d);
-				}
+				prev = AddSegment(i, j, prev);
 			}
 		}
+	}
+	
+	Transform AddJoint(Transform parent, Vector3 position, int finger, int joint)
+	{
+		fingerRotations.Add(0d);
+		GameObject empty = new GameObject("joint" + finger.ToString() + "_" + joint.ToString());
+		empty.transform.SetParent(parent, false);
+		empty.transform.localPosition = position;
+		joints.Add(empty);
+		return empty.transform;
+	}
+	
+	Transform AddSegment(int finger, int joint, Transform previous)
+	{
+		//create string suffix for naming convention
+		float length = fingerLengths[finger*3+joint];
 		
+		GameObject geometry = GameObject.CreatePrimitive(PrimitiveType.Cube);
+		geometry.name = "finger" + finger.ToString() + "_" + joint.ToString();
+		geometry.transform.localScale = new Vector3(palmWidth/4f, palmHeight, length);
+		geometry.transform.SetParent(previous, false);
+		geometry.transform.localPosition = new Vector3(0f, 0f, length/2f);
+		
+		if (joint == 2) return null;
+		
+		return AddJoint(previous, new Vector3(0f, 0f, length), finger, joint+1);
 	}
 	
 	void OnApplicationQuit()
