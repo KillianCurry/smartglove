@@ -37,12 +37,12 @@ extern "C" {
 	SMARTGLOVE_API int releaseLine(double* line);
 	/*
 		Set the lower bound of sensor values.
-		Corresponds to 0 in the final range.
+		Corresponds to 0.00 in the final range.
 	*/
 	SMARTGLOVE_API void calibrateMinimum();
 	/*
 		Set the upper bound of sensor values.
-		Corresponds to 1 in the final range.
+		Corresponds to 1.00 in the final range.
 		If the lower bound matches the upper bound,
 		the sensor is not considered calibrated.
 	*/

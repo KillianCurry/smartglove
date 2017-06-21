@@ -78,13 +78,13 @@ const int chipSelectPin  =    7;
 
 // Configuration Setup
 // MODIFY THESE PARAMETERS TO CHANGE CIRCUIT FUNCTION
-int   ODR_MODE        =      RATE_100HZ;
+int   ODR_MODE        =      RATE_500HZ;//process rate for processing capacitances
 int   INTERRUPT_MODE   =     INTERRUPT_DISABLED;
 int   TRIGGER_MODE    =      TRIGGER_DISABLED;
 int   FILTER_MODE     =      FILTER_16PT;
 int   RESOLUTION_MODE =      RESOLUTION_100fF;
 
-//SPI Configuration
+//SPI Configuration (2000000 = transfer through com port)
 SPISettings SPI_settings(2000000, MSBFIRST, SPI_MODE1); 
 
 //Default scaling factor
@@ -94,10 +94,9 @@ int   RawData[20];
 //madgwick filter
 Madgwick filter;
 unsigned long microsPerReading, microsPrevious;
-float accelScale, gyroScale;
 
 ///////////////////////////////////////////////////////////////
-//  void loop()
+//  void setup()
 //
 //  @breif: 
 //  @params: 
@@ -128,12 +127,12 @@ void setup() {
   pinMode(InterruptPin, INPUT);
   pinMode(chipSelectPin, OUTPUT);
 
-  //Configure 16FGV1.0:
+  //configure 16FGV1.0:
   writeConfiguration();
-  //Get capacitance scaling factor
+  //get capacitance scaling factor
   CapacitanceScalingFactor = getCapacitanceScalingFactor(RESOLUTION_MODE);
 
-  // give the circuit time to set up:
+  //give the SPI time to set up
   delay(0.1);
 }
 
@@ -216,7 +215,7 @@ float convertRawGyro(int gRaw) {
 ///////////////////////////////////////////////////////////////
 void loop_in_float_mode() {
 
-  float capacitance =0;
+  float capacitance = 0;
 
   //Check if interrupt mode is enabled (in configuration)
   if(INTERRUPT_MODE == INTERRUPT_ENABLED){
@@ -236,100 +235,6 @@ void loop_in_float_mode() {
     
   }
  Serial.print("\n");
-
-  //Wait for next data packet to start sampling
-   if(INTERRUPT_MODE == INTERRUPT_ENABLED){
-      while (digitalRead(InterruptPin) == LOW);  
-   }
-}
-
-/*
-int nValue = 0;
-
-float sum_of_capacitance = 0;
-int nValues = 0;
-int nValueCount10000 = 0;
-float average_of_capacitance = 0;
-float error_capacitance = 0;
-float sum_of_square_error = 0;
-float rmse = 0;
-int start_calc = 0;
-int channel_to_display = 0;
-int counter_for_each_channel = 0;
-///////////////////////////////////////////////////////////////
-//  void loop_in_rmse_mode()
-//
-//  @breif: 
-//  @params: 
-///////////////////////////////////////////////////////////////
-void loop_in_rmse_mode(){
-  
-  String capacitance;
-  //Check if interrupt mode is enabled (in configuration)
-  if(INTERRUPT_MODE == INTERRUPT_ENABLED){
-    // don't do anything until the interupt pin goes low:
-    while (digitalRead(InterruptPin) == HIGH);
-  }
-  
-  //Read the sensor Data
-  readCapacitance(RawData);
-  for (int i=0; i<20; i++){
-    //if (i == channel_to_display){
-    if (i == 0){
-      float capacitance;
-      capacitance = extractCapacitance(RawData,i);
-      Serial.print(capacitance);  //Output capacitance values
-      Serial.print(',');          //Output data as comma seperated values
-                
-          Serial.print(',');          //Output data as comma seperated values
-          Serial.print(channel_to_display);  //Output capacitance values          
-                    Serial.print(',');          //Output data as comma seperated values
-          Serial.print(',');          //Output data as comma seperated values
-
-
-      if ((50 < capacitance)&&(capacitance < 2000)){        
-        sum_of_capacitance += capacitance;
-        nValues++;
-        nValueCount10000++;
-
-        Serial.print(nValues);          //Output data as comma seperated values
-
-        if ( nValueCount10000 > 20000 ){
-          average_of_capacitance = sum_of_capacitance / nValues;
-          sum_of_capacitance = 0;
-          nValues = 0;
-          nValueCount10000 = 0;
-          sum_of_square_error = 0;
-          start_calc = 1;
-          counter_for_each_channel++;
-          if (counter_for_each_channel == 3){
-            channel_to_display++;
-            counter_for_each_channel = 0;
-            if (channel_to_display > 19){
-              channel_to_display = 0;
-            }
-          }
-        }
-
-        if (start_calc == 1){
-          error_capacitance = average_of_capacitance - capacitance;
-          sum_of_square_error += error_capacitance*error_capacitance;
-          rmse = sqrt(sum_of_square_error/nValues);
-  
-          Serial.print(',');          //Output data as comma seperated values
-          Serial.print(',');          //Output data as comma seperated values
-          Serial.print(average_of_capacitance);          //Output data as comma seperated values
-
-          Serial.print(',');          //Output data as comma seperated values
-          Serial.print(',');          //Output data as comma seperated values
-          Serial.print(rmse);  //Output capacitance values
-        }
-      }
-    }
-    
-  }
-  
- Serial.print('\n');
 
   //Wait for next data packet to start sampling
    if(INTERRUPT_MODE == INTERRUPT_ENABLED){
@@ -364,8 +269,6 @@ void writeConfiguration() {
   // take the chip select high to de-select:
   digitalWrite(chipSelectPin, HIGH);
 }
-
-
 
 ///////////////////////////////////////////////////////////////
 //  void readCapacitance(int raw[])
@@ -402,7 +305,7 @@ void readCapacitance(int raw[]) {
 ///////////////////////////////////////////////////////////////
 int getCapacitanceScalingFactor (int Resolution_Config)
 {
-
+  //TODO change to just do basic math on the resolution variable rather than a case statement?
   switch(Resolution_Config){
     case (RESOLUTION_1pF):
       return 1;  

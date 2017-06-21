@@ -9,11 +9,17 @@ public class HandEditor:Editor
 	bool connected = false;
 	bool minCalibrated = false;
 	
+	//handedness selection
+	string[] handednessNames = {"Left", "Right"};
+	int[] handednessSigns = {-1, 1};
+	
 	public override void OnInspectorGUI()
 	{
 		DrawDefaultInspector();
 		
 		HandController hand = (HandController)target;
+		
+		hand.handedness = EditorGUILayout.IntPopup("Handedness: ", hand.handedness, handednessNames, handednessSigns);
 		
 		GUI.enabled = Application.isPlaying;
 		
@@ -48,6 +54,7 @@ public class HandEditor:Editor
 		
 		GUI.enabled = Application.isPlaying && connected && minCalibrated;
 		
+		if (GUILayout.Button("Calibrate Maximum")) hand.CalibrateMaximum(-1);
 		GUILayout.BeginHorizontal();
 		if (GUILayout.Button("1")) hand.CalibrateMaximum(0);
 		if (GUILayout.Button("2")) hand.CalibrateMaximum(1);
