@@ -95,114 +95,19 @@ int   RawData[20];
 Madgwick filter;
 unsigned long microsPerReading, microsPrevious;
 
-///////////////////////////////////////////////////////////////
-//  void setup()
-//
-//  @breif: 
-//  @params: 
-///////////////////////////////////////////////////////////////
-void setup() {
-  Serial.begin(9600);
-
-  //Initialise SPI port
-  SPI.begin();
-  SPI.beginTransaction(SPI_settings);
-
-  //Initialise IMU and Madgwick filter
-  CurieIMU.begin();
-  CurieIMU.setGyroRate(25);
-  CurieIMU.setAccelerometerRate(25);
-  filter.begin(25);
-
-  //Set accelerometer range to 2G
-  CurieIMU.setAccelerometerRange(2);
-  //Set gyroscope range to 250 degrees/second
-  CurieIMU.setGyroRange(250);
-
-  //Pace updates
-  microsPerReading = 1000000 / 25;
-  microsPrevious = micros();
-
-  // Initalize the  data ready and chip select pins:
-  pinMode(InterruptPin, INPUT);
-  pinMode(chipSelectPin, OUTPUT);
-
-  //configure 16FGV1.0:
-  writeConfiguration();
-  //get capacitance scaling factor
-  CapacitanceScalingFactor = getCapacitanceScalingFactor(RESOLUTION_MODE);
-
-  //give the SPI time to set up
-  delay(0.1);
-}
-
-///////////////////////////////////////////////////////////////
-//  void loop()
-//
-//  @breif: 
-//  @params: 
-///////////////////////////////////////////////////////////////
-void loop(){
-  int aix, aiy, aiz;
-  int gix, giy, giz;
-  float ax, ay, az;
-  float gx, gy, gz;
-  float roll, pitch, heading;
-  unsigned long microsNow;
-
-  //check whether it's time to update
-  microsNow = micros();
-  if (microsNow - microsPrevious >= microsPerReading)
-  {
-    //read raw data from IMU
-    CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
-
-    //convert data using Madgwick algorithms
-    ax = convertRawAcceleration(aix);
-    ay = convertRawAcceleration(aiy);
-    az = convertRawAcceleration(aiz);
-    gx = convertRawGyro(gix);
-    gy = convertRawGyro(giy);
-    gz = convertRawGyro(giz);
-
-    //update Madgwick filter
-    filter.updateIMU(gx, gy, gz, ax, ay, az);
-
-    //print heading, pitch, and roll
-    roll = filter.getRoll();
-    pitch = filter.getPitch();
-    heading = filter.getYaw();
-    Serial.print(heading);
-    Serial.print(",");
-    Serial.print(pitch);
-    Serial.print(",");
-    Serial.print(roll);
-    Serial.print(",");
-    loop_in_float_mode();
-    //delay(100);
-    
-    // increment previous time, so we keep proper pace
-    microsPrevious = microsPrevious + microsPerReading;
-    //loop_in_rmse_mode();
-  }
-  
-}
-
 float convertRawAcceleration(int aRaw) {
-  // since we are using 2G range
-  // -2g maps to a raw value of -32768
-  // +2g maps to a raw value of 32767
+  // aRaw is a signed integer representing the magnitude of the acceleration
+  // multiply by the range then divide by the limit of an integer to get the real value
  
-  float a = (aRaw * 2.0) / 32768.0;
+  float a = (aRaw * CurieIMU.getAccelerometerRange()) / 32768.0;
   return a;
 }
 
 float convertRawGyro(int gRaw) {
-  // since we are using 250 degrees/seconds range
-  // -250 maps to a raw value of -32768
-  // +250 maps to a raw value of 32767
+  // gRaw is a signed integer representing the magnitude of the angular velocity
+  // multiply by the range then divide by the limit of an integer to get the real value
  
-  float g = (gRaw * 250.0) / 32768.0;
+  float g = (gRaw * CurieIMU.getGyroRange()) / 32768.0;
   return g;
 }
 
@@ -242,7 +147,6 @@ void loop_in_float_mode() {
    }
 }
 
-*/
 ///////////////////////////////////////////////////////////////
 //  void writeConfiguration()
 //
@@ -345,4 +249,95 @@ float extractCapacitance(int raw[], int channel){
 
 }
 
+///////////////////////////////////////////////////////////////
+//  void setup()
+//
+//  @breif: 
+//  @params: 
+///////////////////////////////////////////////////////////////
+void setup() {
+  Serial.begin(9600);
 
+  //Initialise SPI port
+  SPI.begin();
+  SPI.beginTransaction(SPI_settings);
+
+  //Initialise IMU and Madgwick filter
+  CurieIMU.begin();
+  CurieIMU.setGyroRate(25);
+  CurieIMU.setAccelerometerRate(25);
+  filter.begin(25);
+
+  //Set accelerometer range to 2G
+  CurieIMU.setAccelerometerRange(2);
+  //Set gyroscope range to 250 degrees/second
+  CurieIMU.setGyroRange(250);
+
+  //Pace updates
+  microsPerReading = 1000000 / 25;
+  microsPrevious = micros();
+
+  // Initalize the  data ready and chip select pins:
+  pinMode(InterruptPin, INPUT);
+  pinMode(chipSelectPin, OUTPUT);
+
+  //configure 16FGV1.0:
+  writeConfiguration();
+  //get capacitance scaling factor
+  CapacitanceScalingFactor = getCapacitanceScalingFactor(RESOLUTION_MODE);
+
+  //give the SPI time to set up
+  delay(0.1);
+}
+
+///////////////////////////////////////////////////////////////
+//  void loop()
+//
+//  @breif: 
+//  @params: 
+///////////////////////////////////////////////////////////////
+void loop(){
+  int aix, aiy, aiz;
+  int gix, giy, giz;
+  float ax, ay, az;
+  float gx, gy, gz;
+  float roll, pitch, heading;
+  unsigned long microsNow;
+
+  //check whether it's time to update
+  microsNow = micros();
+  if (microsNow - microsPrevious >= microsPerReading)
+  {
+    //read raw data from IMU
+    CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
+
+    //convert data using Madgwick algorithms
+    ax = convertRawAcceleration(aix);
+    ay = convertRawAcceleration(aiy);
+    az = convertRawAcceleration(aiz);
+    gx = convertRawGyro(gix);
+    gy = convertRawGyro(giy);
+    gz = convertRawGyro(giz);
+
+    //update Madgwick filter
+    filter.updateIMU(gx, gy, gz, ax, ay, az);
+
+    //print heading, pitch, and roll
+    roll = filter.getRoll();
+    pitch = filter.getPitch();
+    heading = filter.getYaw();
+    Serial.print(heading);
+    Serial.print(",");
+    Serial.print(pitch);
+    Serial.print(",");
+    Serial.print(roll);
+    Serial.print(",");
+    loop_in_float_mode();
+    //delay(100);
+    
+    // increment previous time, so we keep proper pace
+    microsPrevious = microsPrevious + microsPerReading;
+    //loop_in_rmse_mode();
+  }
+  
+}
