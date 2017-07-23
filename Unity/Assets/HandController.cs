@@ -44,14 +44,12 @@ public class HandController:MonoBehaviour
 	private bool connected = false;
 	
 	//import functions from the DLL
-	[DllImport("smartglove", EntryPoint="openPort")]
+	[DllImport("smartglove", EntryPoint="establishConnection")]
 	public static extern bool openPort(int portNum);
-	[DllImport("smartglove", EntryPoint="closePort")]
+	[DllImport("smartglove", EntryPoint="closeConnection")]
 	public static extern bool closePort();
 	[DllImport("smartglove", EntryPoint="getData", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr readPort();
-	[DllImport("smartglove", EntryPoint="releaseLine", CallingConvention = CallingConvention.Cdecl)]
-	public static extern int releaseLine(IntPtr ptr);
 	[DllImport("smartglove", EntryPoint="calibrateMinimum")]
 	public static extern void calibrateMinimum();
 	[DllImport("smartglove", EntryPoint="calibrateMaximum")]
