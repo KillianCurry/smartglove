@@ -24,7 +24,8 @@ int RawDataIMU[22];
 // pins used for the connection with the sensor
 // the other you need are controlled by the SPI library):
 const int InterruptPin   =    6;
-const int chipSelectPin  =    7;
+// this pin is 7 on the old prototype and 10 on the sardines prototype
+const int chipSelectPin  =    10;
 
 // ---- DEFINITIONS ----//
 
@@ -127,7 +128,7 @@ void setup() {
   CurieIMU.setGyroRange(250);
 
   // initialize variables to pace updates to correct rate
-  microsPerReading = 1000000 / 25;
+  microsPerReading = 1000000 / 12.5;
   microsPrevious = micros();
 
   // Initialise the SPI //////////////////////////////////////
