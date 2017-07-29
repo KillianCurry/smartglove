@@ -45,11 +45,11 @@ public class HandController:MonoBehaviour
 	
 	//import functions from the DLL
 	[DllImport("smartglove", EntryPoint="establishConnection")]
-	public static extern bool openPort(int portNum);
+	public static extern bool openConnection();
 	[DllImport("smartglove", EntryPoint="closeConnection")]
-	public static extern bool closePort();
+	public static extern bool closeConnection();
 	[DllImport("smartglove", EntryPoint="getData", CallingConvention = CallingConvention.Cdecl)]
-	public static extern IntPtr readPort();
+	public static extern IntPtr readGlove();
 	[DllImport("smartglove", EntryPoint="calibrateMinimum")]
 	public static extern void calibrateMinimum();
 	[DllImport("smartglove", EntryPoint="calibrateMaximum")]
@@ -58,17 +58,17 @@ public class HandController:MonoBehaviour
 	//TODO support for multiple tinyTILES
 	//TODO initialize plugin to remove lingering variables??
 	
-	public bool SerialConnect()
+	public bool GloveConnect()
 	{
-		connected = openPort(portNumber);
-		if (connected) StartCoroutine("ReadSerial");
+		connected = openConnection();
+		if (connected) StartCoroutine("GloveRead");
 		return connected;
 	}
 	
-	public bool SerialDisconnect()
+	public bool GloveDisconnect()
 	{
-		bool closed = closePort();
-		if (closed) StopCoroutine("ReadSerial");
+		bool closed = closeConnection();
+		if (closed) StopCoroutine("GloveRead");
 		return closed;
 	}
 	
@@ -154,23 +154,25 @@ public class HandController:MonoBehaviour
 	}
 	
 	//coroutine to read data from arduino into fingerRotations, avoiding lag from waiting to read serial
-	IEnumerator ReadSerial()
+	IEnumerator GloveRead()
 	{
 		while(true)
 		{
 			//copy data from the DLL's unmanaged memory into a managed array
 			double[] data = new double[13];
-			IntPtr ptr = readPort();
+			IntPtr ptr = readGlove();
 			Marshal.Copy(ptr, data, 0, 13);
 			
 			//copy the orientation data (y and z negated to remove mirroring)
-			palmOrientation = new Vector3((float)data[1], -(float)data[0], -(float)data[2]);
+			palmOrientation = new Vector3((float)data[1], (float)data[0], (float)data[2]);
 			
 			//TODO more robust matching of sensors to finger representation
 			//loop through the calibrated finger rotation data
+			String dataString = "";
 			int i = 3;
 			for (int v = 3; v < 13; v++)
 			{
+				dataString += data[v].ToString() + ", ";
 				if (data[v] > 1d) data[v] = 1d;
 				//for the first joint, take the 0-1 value as 0-90 degrees
 				if (i % 3 == 0)
@@ -186,6 +188,7 @@ public class HandController:MonoBehaviour
 					i += 2;
 				}
 			}
+			Debug.Log(dataString);
 			
 			//DEV return null means this will be called again next frame
 			//DEV return new WaitForSeconds(t) means this will wait t seconds before being called again
@@ -276,6 +279,6 @@ public class HandController:MonoBehaviour
 	
 	void OnApplicationQuit()
 	{
-		SerialDisconnect();
+		GloveDisconnect();
 	}
 }

@@ -25,12 +25,11 @@ public class HandEditor:Editor
 		
 		EditorGUILayout.Space();
 		
-		if (GUILayout.Button("Connect Serial"))
+		if (GUILayout.Button("Connect"))
 		{
-			bool opened = hand.SerialConnect();
+			bool opened = hand.GloveConnect();
 			if (opened)
 			{
-				Debug.Log("Serial port opened.");
 				connected = true;
 			}
 			connected = true;
@@ -38,10 +37,9 @@ public class HandEditor:Editor
 		
 		GUI.enabled = Application.isPlaying && connected;
 		
-		if (GUILayout.Button("Disconnect Serial"))
+		if (GUILayout.Button("Disconnect"))
 		{
-			bool closed = hand.SerialDisconnect();
-			if (closed) Debug.Log("Serial port closed.");
+			bool closed = hand.GloveConnect();
 		}
 		
 		EditorGUILayout.Space();

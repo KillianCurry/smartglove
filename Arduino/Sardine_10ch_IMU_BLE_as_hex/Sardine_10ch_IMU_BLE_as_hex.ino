@@ -13,7 +13,7 @@ int counter_LED = 0;
 
 // Declaration IMU
 Madgwick filter;
-unsigned long microsPerReading, microsPrevious;
+unsigned long notificationInterval, lastNotification, updateInterval, lastUpdate;
 float accelScale, gyroScale;
 int RawDataIMU[22];
 
@@ -128,8 +128,10 @@ void setup() {
   CurieIMU.setGyroRange(250);
 
   // initialize variables to pace updates to correct rate
-  microsPerReading = 1000000 / 12.5;
-  microsPrevious = micros();
+  notificationInterval = 1000 / 10;//update BLE characteristics at 10Hz
+  updateInterval = 1000 / 25;//update madgwick etc at 25Hz
+  
+  lastNotification = lastUpdate = millis();
 
   // Initialise the SPI //////////////////////////////////////
 
@@ -157,26 +159,23 @@ void setup() {
 /////////////////////////////////////////////////////////////
 void loop() {
   int aix, aiy, aiz;
-  int gix, giy, giz;
-  float ax, ay, az;
-  float gx, gy, gz;
-  float roll, pitch, heading;
-  int roll_int, pitch_int, heading_int;
-  float accel_x, accel_y, accel_z;
-  int accel_x_int, accel_y_int, accel_z_int;
+    int gix, giy, giz;
+    float ax, ay, az;
+    float gx, gy, gz;
+    float roll, pitch, heading;
+    int roll_int, pitch_int, heading_int;
+    float accel_x, accel_y, accel_z;
+    int accel_x_int, accel_y_int, accel_z_int;
+    String str = "";
+    String str2 = "";
 
-  unsigned long microsNow;
-  String str = "";
-  String str2 = "";
-
-  // check if it's time to read data and update the filter
-  microsNow = micros();
-  if (microsNow - microsPrevious >= microsPerReading) {
-
+    // check if it's time to read data and update the filter
+    if (millis() - lastUpdate >= updateInterval) {
+    lastUpdate = millis();
     /////////////////////////////////////////////////////////////
     // IMU Mode /////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////
-    Serial.println("reading IMU");
+    //Serial.println("reading IMU");
     // read raw data from CurieIMU
     CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
 
@@ -195,7 +194,18 @@ void loop() {
     heading = filter.getYaw();
     pitch = filter.getPitch();
     roll = filter.getRoll();
+    
+    /////////////////////////////////////////////////////////////
+    // StretchSense Mode ////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
+    //Serial.println("reading SPI");
+    //Read the sensor Data
+    readCapacitance(RawDataCapacitance);
+    }
 
+    // check if it's time to read data and update the BLE
+    if (millis() - lastNotification >= notificationInterval) {
+    lastNotification = millis();
     // shift the value to be positive
     pitch = pitch + 90;
     roll = roll + 180;
@@ -209,7 +219,7 @@ void loop() {
     accel_x_int = accel_x * 100;
     accel_y_int = accel_y * 100;
     accel_z_int = accel_z * 100;
-    Serial.println("converting IMU values");
+    //Serial.println("converting IMU values");
     // separate each integer IMU into 2 headecimal values
     RawDataIMU[0] = heading_int / 256;
     RawDataIMU[1] = heading_int - ((heading_int / 256) << 8);
@@ -233,51 +243,14 @@ void loop() {
     RawDataIMU[19] = 0;
 
 
-    /////////////////////////////////////////////////////////////
-    // StretchSense Mode ////////////////////////////////////////
-    /////////////////////////////////////////////////////////////
-    Serial.println("reading SPI");
-    //Read the sensor Data
-    readCapacitance(RawDataCapacitance);
-
-    /////////////////////////////////////////////////////////////
-    // Serial print /////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////
-    /*Serial.print(" Int: ");
-      Serial.print(heading_int);
-      Serial.print(", ");           //Output data as comma seperated values
-      Serial.print(pitch_int);
-      Serial.print(", ");           //Output data as comma seperated values
-      Serial.print(roll_int);
-      Serial.print(", ");           //Output data as comma seperated values
-
-      //Convert the raw data to IMU:
-      Serial.print(" Orientation: ");
-      float imu_values = 0;
-      for (int i = 0; i < 10; i++) {
-        imu_values = extractCapacitance(RawDataIMU, i)/100;
-        Serial.print(imu_values);     //Output capacitance values
-        Serial.print(", ");           //Output data as comma seperated values
-      }
-
-      //Convert the raw data to capacitance:
-      Serial.print(" StretchSense: ");
-      float capacitance = 0;
-      for (int i = 0; i < 10; i++) {
-        capacitance = extractCapacitance(RawDataCapacitance, i);
-        Serial.print(capacitance);  //Output capacitance values
-        Serial.print(", ");          //Output data as comma seperated values
-      }
-      Serial.print("\n");
-    */
 
     /////////////////////////////////////////////////////////////
     // BLE Mode //////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////
-    
-    Serial.println("BLE communication");
+
+    //Serial.println("BLE communication");
     BLECentral central = blePeripheral.central();
-    Serial.println("central found");
+    //Serial.println("central found");
     if (central) { // if a central is connected to peripheral
       const unsigned char imuCharArray[20] = {
         RawDataIMU[0], RawDataIMU[1], RawDataIMU[2], RawDataIMU[3], RawDataIMU[4],
@@ -285,11 +258,11 @@ void loop() {
         RawDataIMU[10], RawDataIMU[11], RawDataIMU[12], RawDataIMU[13], RawDataIMU[14],
         RawDataIMU[15], RawDataIMU[16], RawDataIMU[17], RawDataIMU[18], RawDataIMU[19]
       };
-      Serial.println("IMU converted");
+      //Serial.println("IMU converted");
 
       imuChar.setValue(imuCharArray, 20); //notify central with new data
     }
-    Serial.println("imu updated");
+    //Serial.println("imu updated");
     if (central) { // if a central is connected to peripheral
       const unsigned char capaCharArray[20] = {
         RawDataCapacitance[0], RawDataCapacitance[1], RawDataCapacitance[2], RawDataCapacitance[3], RawDataCapacitance[4],
@@ -297,15 +270,14 @@ void loop() {
         RawDataCapacitance[10], RawDataCapacitance[11], RawDataCapacitance[12], RawDataCapacitance[13], RawDataCapacitance[14],
         RawDataCapacitance[15], RawDataCapacitance[16], RawDataCapacitance[17], RawDataCapacitance[18], RawDataCapacitance[19]
       };
-      Serial.println("capa converted");
+      //Serial.println("capa converted");
 
       stretchSenseChar.setValue(capaCharArray, 20); //notify central with new data
     }
-    Serial.println("updating time");
+    //Serial.println("updating time");
     // increment previous time, so we keep proper pace
-    microsPrevious = microsPrevious + microsPerReading;
 
-  }
+    }
 }
 
 
@@ -377,11 +349,17 @@ void readCapacitance(int raw[]) {
   SPI.transfer(PADDING);                //  Get Sequence Number
   //Read capacitance
   Serial.print("RAW: ");
-  for (int i = 0; i < 20; i++) {
-    raw[i] =  SPI.transfer(PADDING);    //  Pad out the remaining configuration package
-    Serial.print(raw[i]);
-    Serial.print(" ");
-    //print(" ")
+  for (int a = 0; a < 10; a++) {
+    int num = 0;
+    for (int i = 0; i < 2; i++) {
+      raw[a*2+i] =  SPI.transfer(PADDING);    //  Pad out the remaining configuration package
+      if (i == 0) num += raw[a*2+i]*256;
+      else num += raw[a*2+i];
+    }
+    if (a > 0) 
+    {
+      Serial.print(num);
+    }
   }
 
   Serial.println();
