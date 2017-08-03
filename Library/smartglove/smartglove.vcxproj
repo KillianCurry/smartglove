@@ -146,12 +146,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Pose.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="smartglove.h" />
+    <ClInclude Include="TolValue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="smartglove.cpp" />
     <ClCompile Include="SerialPort.cpp" />
+    <ClCompile Include="Pose.cpp" />
+    <ClCompile Include="TolValue.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
