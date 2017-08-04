@@ -14,21 +14,14 @@ using std::endl;
 #endif
 
 #define UUID_TO_SEARCH "{00601001-7374-7265-7563-6873656e7365}"
+#define CHANNELS 10
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-	//the raw values on the current line of data
-	std::vector<double> lineValues;
-	//the raw values on the last line of data
-	std::vector<double> lastValues;
-	//the processed values from the last line of data
-	std::vector<double> calibratedValues;
 	//the minimum and maximum raw values
-	std::vector<double> minValues;
-	std::vector<double> maxValues;
-	//whether there's a calibration available for the given sensor value
-	std::vector<bool> isCalibrated;
+	int* minValues;
+	int* maxValues;
 	//the current character index, to build the string
 	int curChar = 0;
 
@@ -93,10 +86,20 @@ extern "C" {
 	SMARTGLOVE_API bool establishConnection()
 	{
 		//TODO redesign architecture to use shorts? (values from BLE are 2-bit)
-		stretch = (int*)malloc(sizeof(int) * 10);
-		RtlZeroMemory(stretch, sizeof(int) * 10);
+		stretch = (int*)malloc(sizeof(int) * CHANNELS);
+		RtlZeroMemory(stretch, sizeof(int) * CHANNELS);
 		imu = (int*)malloc(sizeof(int) * 10);
 		RtlZeroMemory(imu, sizeof(int) * 10);
+		//allocate memory for calibration values
+		minValues = (int*)malloc(sizeof(int) * CHANNELS);
+		RtlZeroMemory(minValues, sizeof(int) * CHANNELS);
+		maxValues = (int*)malloc(sizeof(int) * CHANNELS);
+		RtlZeroMemory(maxValues, sizeof(int) * CHANNELS);
+		for (int i = 0; i < CHANNELS; i++)
+		{
+			minValues[i] = INT_MAX;
+			maxValues[i] = INT_MIN;
+		}
 
 		//TODO get GUID from function argument string
 		GUID pGUID;
@@ -291,74 +294,24 @@ extern "C" {
 
 	SMARTGLOVE_API double* getData()
 	{
-		//TODO replace calibratedValues with an array, not a vector
-		calibratedValues.clear();
-		calibratedValues.push_back((double)imu[0]/ (double)100);
-		calibratedValues.push_back((double)imu[1]/ (double)100);
-		calibratedValues.push_back((double)imu[2]/ (double)100);
-		for (int i = 0; i < 10; i++)
+		//allocate enough memory for all the stretch channels + xyz orientation
+		double* values = (double*)malloc(sizeof(double) * (CHANNELS+3));
+		values[0] = ((double)imu[0]/ (double)100);
+		values[1] = ((double)imu[1]/ (double)100);
+		values[2] = ((double)imu[2]/ (double)100);
+		for (int i = 0; i < CHANNELS; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
-			if (isCalibrated.size() >= i + 1 && isCalibrated[i]) calibratedValues.push_back((double)(stretch[i] - minValues[i]) / (double)(maxValues[i] - minValues[i]));
-			else calibratedValues.push_back(0);
+			if (stretch[i] < minValues[i]) minValues[i] = stretch[i];
+			if (stretch[i] > maxValues[i]) maxValues[i] = stretch[i];
+			values[i+3] = (double)(stretch[i] - minValues[i]) / (double)(maxValues[i] - minValues[i]);
 		}
 
 		//TODO split returns of IMU and stretch sensors into two functions?
 
 		//return a pointer to the last line that was read
-		return calibratedValues.data();
-	}
-
-	SMARTGLOVE_API void calibrateMinimum()
-	{
-		//TODO advanced, gesture-based calibration
-		//clear previous values, if any
-		minValues.clear();
-		//loop through current raw sensor values
-		for (int i = 0; i < 10; i++)
-		{
-			//set minimum to current value
-			minValues.push_back(stretch[i]);
-		}
-		//set up maximum calibration vector
-		maxValues.clear();
-
-		for (int a = 0; a < 10; a++)
-		{
-			//populate vector as we go
-			maxValues.push_back(0);
-			isCalibrated.push_back(false);
-		}
-	}
-
-	SMARTGLOVE_API void calibrateMaximum(int sensor)
-	{
-		//if the maximum is different from the minimum,
-		//update max and complete calibration for that sensor
-		if (stretch[sensor] != minValues[sensor])
-		{
-			maxValues[sensor] = stretch[sensor];
-			isCalibrated[sensor] = true;
-		}
-
-		/*code to calibrate all at once
-		//clear previous values, if any
-		maxValues.clear();
-		//loop through current raw sensor values
-		for (int i = 0; i < 10; i++)
-		{
-			//populate vector as we go
-			maxValues.push_back(0);
-			isCalibrated.push_back(false);
-			//if the maximum is different from the minimum,
-			//update max and complete calibration for that sensor
-			if (lastValues[i+3] != minValues[i])
-			{
-				maxValues[i] = lastValues[i+3];
-				isCalibrated[i] = true;
-			}
-		}*/
+		return values;
 	}
 
 #ifdef __cplusplus

@@ -3,24 +3,29 @@
 #include <CurieBLE.h>
 #include <SPI.h>
 
+// Values used for timing of the BLE notification step.
+unsigned long notificationInterval, lastNotification;
+// Values used for timing of the sensor update step.
+unsigned long sensorInterval, lastSensor;
 
-// Declaration BLE
+// BLE - Bluetooth Low Energy
+// The BLE interface allows wireless data communication.
 BLEPeripheral blePeripheral;
 BLEService stretchSenseService("00601001-7374-7265-7563-6873656e7365"); //give your custom service an ID
-BLECharacteristic stretchSenseChar("00601002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20); //give your custom characteristic an ID, properties, and length
+BLECharacteristic stretchChar("00601002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20); //give your custom characteristic an ID, properties, and length
 BLECharacteristic imuChar("00601050-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20); //give your custom characteristic an ID, properties, and length
-int counter_LED = 0;
 
-// Declaration IMU
-Madgwick filter;
-unsigned long notificationInterval, lastNotification, updateInterval, lastUpdate;
+// IMU - Inertial Motion Unit
+// The IMU tracks orientation using the Madgwick algorithm.
+// Scaling parameters to define the resolution for the accelerometer and gyroscope.
 float accelScale, gyroScale;
+// Array used to store data from the IMU for BLE communication.
+// Values are stored as two-byte unsigned shorts.
 int RawDataIMU[22];
+// The filtering algorithm, developed by Sebastian Madgwick and ported to Arduino by X-IO.
+Madgwick filter;
 
-
-
-// Declaration StretchSense
-
+// StretchSense - stretch sensors
 // pins used for the connection with the sensor
 // the other you need are controlled by the SPI library):
 const int InterruptPin   =    6;
@@ -54,6 +59,8 @@ const int chipSelectPin  =    10;
 #define TRIGGER_ENABLED      0x01
 
 // FILTER - Filter Mode
+// This is the amount of points in the filter used for the SPI circuit.
+// More points means a smoother, but slower and less accurate signal.
 #define FILTER_1PT           0x01
 #define FILTER_2PT           0x02
 #define FILTER_4PT           0x04
@@ -75,11 +82,14 @@ const int chipSelectPin  =    10;
 
 // Configuration Setup
 // MODIFY THESE PARAMETERS TO CHANGE CIRCUIT FUNCTION
-int   ODR_MODE        =      RATE_50HZ;
+int   ODR_MODE        =      RATE_500HZ;
 int   INTERRUPT_MODE   =     INTERRUPT_DISABLED;
 int   TRIGGER_MODE    =      TRIGGER_DISABLED;
-int   FILTER_MODE     =      FILTER_1PT;
+int   FILTER_MODE     =      FILTER_32PT;
 int   RESOLUTION_MODE =      RESOLUTION_100fF;
+
+#define NOTIFICATION_FREQUENCY 12.5
+#define SENSOR_FREQUENCY 50
 
 //SPI Configuration
 SPISettings SPI_settings(2000000, MSBFIRST, SPI_MODE1);
@@ -92,6 +102,7 @@ float timestamp = 0;
 float counter = 0;
 float previous_value_counter = 0;
 
+float roll, pitch, heading;
 
 /////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
@@ -109,7 +120,11 @@ void setup() {
   blePeripheral.addAttribute(stretchSenseService);   // add your custom service
 
   blePeripheral.addAttribute(imuChar); // add your custom characteristic
-  blePeripheral.addAttribute(stretchSenseChar); // add your custom characteristic
+  blePeripheral.addAttribute(stretchChar); // add your custom characteristic
+
+  //set connection/disconnection events
+  blePeripheral.setEventHandler(BLEConnected, BLECentralConnect);
+  blePeripheral.setEventHandler(BLEDisconnected, BLECentralDisconnect);
 
   blePeripheral.begin();
 
@@ -128,10 +143,10 @@ void setup() {
   CurieIMU.setGyroRange(250);
 
   // initialize variables to pace updates to correct rate
-  notificationInterval = 1000 / 10;//update BLE characteristics at 10Hz
-  updateInterval = 1000 / 25;//update madgwick etc at 25Hz
+  notificationInterval = 1000 / NOTIFICATION_FREQUENCY;//update BLE characteristics at 10Hz
+  sensorInterval = 1000 / SENSOR_FREQUENCY;//update madgwick etc at 25Hz
   
-  lastNotification = lastUpdate = millis();
+  lastNotification = lastSensor = millis();
 
   // Initialise the SPI //////////////////////////////////////
 
@@ -162,16 +177,13 @@ void loop() {
     int gix, giy, giz;
     float ax, ay, az;
     float gx, gy, gz;
-    float roll, pitch, heading;
     int roll_int, pitch_int, heading_int;
     float accel_x, accel_y, accel_z;
     int accel_x_int, accel_y_int, accel_z_int;
-    String str = "";
-    String str2 = "";
 
     // check if it's time to read data and update the filter
-    if (millis() - lastUpdate >= updateInterval) {
-    lastUpdate = millis();
+    if ((millis() - lastSensor) >= sensorInterval) {
+    lastSensor = millis();
     /////////////////////////////////////////////////////////////
     // IMU Mode /////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////
@@ -206,21 +218,18 @@ void loop() {
     // check if it's time to read data and update the BLE
     if (millis() - lastNotification >= notificationInterval) {
     lastNotification = millis();
-    // shift the value to be positive
-    pitch = pitch + 90;
-    roll = roll + 180;
+    // get positive orientation values
     accel_x = ax + 2;
     accel_y = ay + 2;
     accel_z = az + 2;
     // shift the decimal place and cast into integer
     heading_int = heading * 100;
-    pitch_int = pitch * 100;
-    roll_int = roll * 100;
+    pitch_int = (pitch+90) * 100;
+    roll_int = (roll+180) * 100;
     accel_x_int = accel_x * 100;
     accel_y_int = accel_y * 100;
     accel_z_int = accel_z * 100;
-    //Serial.println("converting IMU values");
-    // separate each integer IMU into 2 headecimal values
+    // encode IMU integers into an array of 2-byte shorts
     RawDataIMU[0] = heading_int / 256;
     RawDataIMU[1] = heading_int - ((heading_int / 256) << 8);
     RawDataIMU[2] = pitch_int / 256;
@@ -241,8 +250,13 @@ void loop() {
     RawDataIMU[17] = 0;
     RawDataIMU[18] = 0;
     RawDataIMU[19] = 0;
-
-
+    
+    for (int a = 0; a < 3; a++) {
+      int num = RawDataIMU[a*2]*256 + RawDataIMU[a*2+1];
+      Serial.print(num/100);
+      Serial.print(",");
+  }
+  Serial.println();
 
     /////////////////////////////////////////////////////////////
     // BLE Mode //////////////////////////////////////////////////
@@ -250,29 +264,25 @@ void loop() {
 
     //Serial.println("BLE communication");
     BLECentral central = blePeripheral.central();
-    //Serial.println("central found");
+
     if (central) { // if a central is connected to peripheral
+      //update the IMU characteristic
       const unsigned char imuCharArray[20] = {
         RawDataIMU[0], RawDataIMU[1], RawDataIMU[2], RawDataIMU[3], RawDataIMU[4],
         RawDataIMU[5], RawDataIMU[6], RawDataIMU[7], RawDataIMU[8], RawDataIMU[9],
         RawDataIMU[10], RawDataIMU[11], RawDataIMU[12], RawDataIMU[13], RawDataIMU[14],
         RawDataIMU[15], RawDataIMU[16], RawDataIMU[17], RawDataIMU[18], RawDataIMU[19]
       };
-      //Serial.println("IMU converted");
-
       imuChar.setValue(imuCharArray, 20); //notify central with new data
-    }
-    //Serial.println("imu updated");
-    if (central) { // if a central is connected to peripheral
+
+      //update the stretch sensor characteristic
       const unsigned char capaCharArray[20] = {
         RawDataCapacitance[0], RawDataCapacitance[1], RawDataCapacitance[2], RawDataCapacitance[3], RawDataCapacitance[4],
         RawDataCapacitance[5], RawDataCapacitance[6], RawDataCapacitance[7], RawDataCapacitance[8], RawDataCapacitance[9],
         RawDataCapacitance[10], RawDataCapacitance[11], RawDataCapacitance[12], RawDataCapacitance[13], RawDataCapacitance[14],
         RawDataCapacitance[15], RawDataCapacitance[16], RawDataCapacitance[17], RawDataCapacitance[18], RawDataCapacitance[19]
       };
-      //Serial.println("capa converted");
-
-      stretchSenseChar.setValue(capaCharArray, 20); //notify central with new data
+      stretchChar.setValue(capaCharArray, 20); //notify central with new data
     }
     //Serial.println("updating time");
     // increment previous time, so we keep proper pace
@@ -338,7 +348,7 @@ void readCapacitance(int raw[]) {
 
   // 16FGV1.0 transmits data in the form of 10, 16bit capacitance values
   if (INTERRUPT_MODE == INTERRUPT_ENABLED) {
-    // don't do anything until the interupt pin goes low:
+    // don't do anything until the interrupt pin goes low:
     while (digitalRead(InterruptPin) == HIGH);
   }
 
@@ -348,7 +358,7 @@ void readCapacitance(int raw[]) {
   SPI.transfer(DATA);                   //  Select Data Package
   SPI.transfer(PADDING);                //  Get Sequence Number
   //Read capacitance
-  Serial.print("RAW: ");
+  //Serial.print("RAW: ");
   for (int a = 0; a < 10; a++) {
     int num = 0;
     for (int i = 0; i < 2; i++) {
@@ -356,13 +366,14 @@ void readCapacitance(int raw[]) {
       if (i == 0) num += raw[a*2+i]*256;
       else num += raw[a*2+i];
     }
-    if (a > 0) 
+    if (false) 
     {
       Serial.print(num);
+      Serial.print(" ");
     }
   }
 
-  Serial.println();
+  //Serial.println();
 
   // take the chip select high to de-select:
   digitalWrite(chipSelectPin, HIGH);
@@ -424,4 +435,13 @@ float extractCapacitance(int raw[], int channel) {
 
 }
 
+void BLECentralConnect(BLECentral& central)
+{
+  
+}
+
+void BLECentralDisconnect(BLECentral& central)
+{
+  
+}
 

@@ -17,6 +17,9 @@ public class HandController:MonoBehaviour
 	public float palmLength;
 	//list of each segment's length, for proportions
 	private List<float> fingerLengths;
+	//list of finger rotation ranges
+	private List<float> rotationMinimum;
+	private List<float> rotationMaximum;
 	//list of each joint
 	private List<GameObject> joints;
 	
@@ -95,21 +98,72 @@ public class HandController:MonoBehaviour
 	{
 		//finger proportions
 		fingerLengths = new List<float>();
+		rotationMinimum = new List<float>();
+		rotationMaximum = new List<float>();
+		//thumb
 		fingerLengths.Add(palmWidth/2f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(90f);
+		
 		fingerLengths.Add(palmWidth/2f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(90f);
+		
 		fingerLengths.Add(palmWidth/4f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(90f);
+		
+		//index
 		fingerLengths.Add(0.5f);
+		rotationMinimum.Add(-10f);
+		rotationMaximum.Add(75f);
+		
 		fingerLengths.Add(0.3f);
+		rotationMinimum.Add(-15f);
+		rotationMaximum.Add(110f);
+		
 		fingerLengths.Add(0.2f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(80f);
+		
+		//middle
 		fingerLengths.Add(0.6f);
+		rotationMinimum.Add(-10f);
+		rotationMaximum.Add(75f);
+		
 		fingerLengths.Add(0.35f);
+		rotationMinimum.Add(-15f);
+		rotationMaximum.Add(110f);
+		
 		fingerLengths.Add(0.2f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(80f);
+		
+		//ring
 		fingerLengths.Add(0.5f);
+		rotationMinimum.Add(-10f);
+		rotationMaximum.Add(75f);
+		
 		fingerLengths.Add(0.3f);
+		rotationMinimum.Add(-15f);
+		rotationMaximum.Add(110f);
+		
 		fingerLengths.Add(0.2f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(80f);
+		
+		//index
 		fingerLengths.Add(0.35f);
+		rotationMinimum.Add(-10f);
+		rotationMaximum.Add(75f);
+		
 		fingerLengths.Add(0.2f);
+		rotationMinimum.Add(-15f);
+		rotationMaximum.Add(110f);
+		
 		fingerLengths.Add(0.15f);
+		rotationMinimum.Add(0f);
+		rotationMaximum.Add(80f);
 		
 		GenerateHand();
 	}
@@ -126,7 +180,7 @@ public class HandController:MonoBehaviour
 				if (r % 3 == 0) spread = handedness*((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
 				joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], spread, 0f);
 			}
-			this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
+			this.transform.localRotation = Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 		}
 		//otherwise let the user control the hand via interface
 		else
@@ -163,21 +217,25 @@ public class HandController:MonoBehaviour
 			IntPtr ptr = readGlove();
 			Marshal.Copy(ptr, data, 0, 13);
 			
+			Debug.Log(data[0]);
+			
 			//copy the orientation data (y and z negated to remove mirroring)
-			palmOrientation = new Vector3((float)data[1], (float)data[0], (float)data[2]);
+			palmOrientation = new Vector3((float)data[0],(float)data[1],(float)data[2]);
 			
 			//TODO more robust matching of sensors to finger representation
 			//loop through the calibrated finger rotation data
 			String dataString = "";
-			int i = 3;
+			/*int i = 3;
 			for (int v = 3; v < 13; v++)
 			{
 				dataString += data[v].ToString() + ", ";
+				if (double.IsNaN(data[v])) data[v] = 0d;
 				if (data[v] > 1d) data[v] = 1d;
+				if (data[v] < 0d) data[v] = 0d;
 				//for the first joint, take the 0-1 value as 0-90 degrees
 				if (i % 3 == 0)
 				{
-					fingerRotations[i-3] = data[v]*90f;
+					fingerRotations[i-3] = rotationMinimum[i-3] + data[v]*rotationMaximum[i-3];
 					if (fiveSensor) fingerRotations[i-2] = fingerRotations[i-1] = data[v]*45f;
 					i += 1;
 				}
@@ -187,8 +245,30 @@ public class HandController:MonoBehaviour
 					if (!fiveSensor) fingerRotations[i-3] = fingerRotations[i-2] = data[v]*45f;
 					i += 2;
 				}
+			}*/
+			for (int i = 0; i < 15; i++)
+			{
+				//TODO move all of this into the library
+				//TODO make the array the library passes 15 values long, even if the last joint values are duplicates
+				//get the stretch data from the BLE (3 to 12)
+				double val = data[(i/3)*2+3];
+				if ((i%3) != 0) val = data[(i/3)*2+4];
+				//clean out NaN values
+				if (double.IsNaN(val)) val = 0d;
+				//clamp just in case it exceeds extremes
+				if (val < 0d) val = 0d;
+				else if (val > 1d) val = 1d;
+				//if the glove is ten-sensor, just directly translate the value, splitting it between the two extreme joints
+				if (!fiveSensor)
+				{
+					fingerRotations[i] = rotationMinimum[i] + (val * rotationMaximum[i]);
+				}
+				//otherwise, split even values among all joints of a finger
+				else
+				{
+					
+				}
 			}
-			Debug.Log(dataString);
 			
 			//DEV return null means this will be called again next frame
 			//DEV return new WaitForSeconds(t) means this will wait t seconds before being called again

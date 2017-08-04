@@ -1,29 +1,18 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
-[CustomEditor(typeof(HandController))]
-public class HandEditor:Editor
+//use immediate GUI to draw a hacky menu for debugging in xcode
+
+public class HandMenu:MonoBehaviour
 {
-	bool connected = false;
-	bool minCalibrated = false;
+	public HandController hand;
 	
-	//handedness selection
-	string[] handednessNames = {"Left", "Right"};
-	int[] handednessSigns = {-1, 1};
-	
-	public override void OnInspectorGUI()
+	private bool connected = false;
+	private bool minCalibrated = false;
+
+	void OnGUI()
 	{
-		DrawDefaultInspector();
-		
-		HandController hand = (HandController)target;
-		
-		hand.handedness = EditorGUILayout.IntPopup("Handedness: ", hand.handedness, handednessNames, handednessSigns);
-		
-		GUI.enabled = Application.isPlaying;
-		
-		EditorGUILayout.Space();
 		
 		if (GUILayout.Button("Connect"))
 		{
@@ -42,7 +31,6 @@ public class HandEditor:Editor
 			bool closed = hand.GloveConnect();
 		}
 		
-		EditorGUILayout.Space();
 		
 		if (GUILayout.Button("Calibrate Minimum"))
 		{
@@ -65,10 +53,5 @@ public class HandEditor:Editor
 		if (GUILayout.Button("9")) hand.CalibrateMaximum(8);
 		if (GUILayout.Button("10")) hand.CalibrateMaximum(9);
 		GUILayout.EndHorizontal();
-	}
-	
-	void OnInspectorUpdate()
-	{
-		this.Repaint();
 	}
 }

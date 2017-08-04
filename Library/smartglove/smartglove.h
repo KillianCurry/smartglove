@@ -19,6 +19,7 @@
 #include <Bluetoothleapis.h>
 #include <string>
 #include <sstream>
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
