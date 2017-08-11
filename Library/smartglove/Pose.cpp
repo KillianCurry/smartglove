@@ -6,14 +6,25 @@
 //using std::vector;
 //using std::string;
 
-Pose::Pose()
+Pose::Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans)
 {
-
+	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
+	{
+		TolValue<double> temp = *(new TolValue<double>(*it));
+		this->Articulation.push_back(temp);
+	}
+	
+	for (vector<double>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
+	{
+		TolValue<double> temp = *(new TolValue<double>(*it));
+		this->Orientation.push_back(temp);
+	}
 }
 
 Pose::Pose(vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation)
 {
-
+	this->Articulation = Articulation;
+	this->Orientation = Orientation;
 }
 
 Pose::~Pose()
@@ -21,9 +32,19 @@ Pose::~Pose()
 
 }
 
-bool Pose::operator==(const Pose& curPose)
+bool Pose::operator==(Pose& curPose)
 {
+	{
+		vector<TolValue<double>>::iterator it1 = Articulation.begin();
+		vector<TolValue<double>>::iterator it2 = curPose.Articulation.begin();
+		for (; (it1 != Articulation.end() && it2 != curPose.Articulation.end()); ++it1, ++it2)
+		{
+			if (it1 != it2)
+			{
 
+			}
+		}
+	}
 }
 
 string Pose::writeOut()

@@ -48,3 +48,9 @@ bool TolValue<T>::operator==(const TolValue<T>& value)
 {
 	return overlapIncl(value);
 }
+
+template <class T>
+bool TolValue<T>::operator!=(const TolValue<T>& value)
+{
+	return !(this==value);
+}

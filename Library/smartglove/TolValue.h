@@ -18,6 +18,7 @@ public:
 	bool overlapIncl(const TolValue<T>& value); // Check if a pair of toleranced values overlap at all.
 	bool overlapExcl(const TolValue<T>& value); // Check if a pair of toleranced values both have their means within each others' ranges.
 	bool operator==(const TolValue<T>& value); // Overload of the default equality-check operator. Uses inclusive overlap.
+	bool operator!=(const TolValue<T>& value);
 };
 
 #endif

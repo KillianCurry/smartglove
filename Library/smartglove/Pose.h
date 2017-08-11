@@ -21,11 +21,11 @@ private:
 	vector<TolValue<double>> Orientation;
 
 public:
-	Pose();
+	Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans);
 	Pose(vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation);
 	~Pose();
 
-	bool operator==(const Pose& curPose);
+	bool operator==(Pose& curPose);
 	string writeOut();
 	void readIn(string data);
 };
