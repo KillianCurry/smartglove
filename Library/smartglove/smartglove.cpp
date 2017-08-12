@@ -19,14 +19,13 @@ using std::endl;
 #ifdef __cplusplus
 extern "C" {
 #endif
+	//TODO redesign architecture to use shorts? (values from BLE are 2-byte)
 	//the minimum and maximum raw values
-	int* minValues;
-	int* maxValues;
-	//the current character index, to build the string
-	int curChar = 0;
+	std::vector<int> minValues(CHANNELS, INT_MAX);
+	std::vector<int> maxValues(CHANNELS, INT_MIN);
 
-	int* stretch;
-	int* imu;
+	std::vector<int> stretch(CHANNELS, 0);
+	std::vector<int> imu(CHANNELS, 0);
 
 	HANDLE pHandle;
 
@@ -83,18 +82,10 @@ extern "C" {
 		return hComm;
 	}
 	
+	//TODO replace mallocs with vectors
 	SMARTGLOVE_API bool establishConnection()
 	{
-		//TODO redesign architecture to use shorts? (values from BLE are 2-bit)
-		stretch = (int*)malloc(sizeof(int) * CHANNELS);
-		RtlZeroMemory(stretch, sizeof(int) * CHANNELS);
-		imu = (int*)malloc(sizeof(int) * 10);
-		RtlZeroMemory(imu, sizeof(int) * 10);
-		//allocate memory for calibration values
-		minValues = (int*)malloc(sizeof(int) * CHANNELS);
-		RtlZeroMemory(minValues, sizeof(int) * CHANNELS);
-		maxValues = (int*)malloc(sizeof(int) * CHANNELS);
-		RtlZeroMemory(maxValues, sizeof(int) * CHANNELS);
+		//set values that are guaranteed to be overwritten
 		for (int i = 0; i < CHANNELS; i++)
 		{
 			minValues[i] = INT_MAX;
@@ -271,18 +262,19 @@ extern "C" {
 
 		//TODO fix to register handles on notification registration
 
-		//point to the array we want to fill
-		int* splitInts;
+		//point to the vector we want to fill
+		std::vector<int>* splitInts;
 		//use characteristic handle to understand whether this is stretch or IMU data
-		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = stretch;
-		else splitInts = imu;
+		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &stretch;
+		else splitInts = &imu;
 
 		//the values are stored as 2-bit short integers
 		//convert them with bitwise math
 		for (int i = 0; i < 10; i++)
 		{
-			splitInts[i] = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
-			splitInts[i] += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+			int val = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
+			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+			(*splitInts)[i] = val;
 		}
 	}
 
@@ -292,10 +284,12 @@ extern "C" {
 		CloseHandle(pHandle);
 	}
 
+	//TODO consider just calling a main update loop that calls getData()
+
 	SMARTGLOVE_API double* getData()
 	{
 		//allocate enough memory for all the stretch channels + xyz orientation
-		double* values = (double*)malloc(sizeof(double) * (CHANNELS+3));
+		std::vector<double> values(CHANNELS + 3, 0);
 		values[0] = ((double)imu[0]/ (double)100);
 		values[1] = ((double)imu[1]/ (double)100);
 		values[2] = ((double)imu[2]/ (double)100);
@@ -303,15 +297,32 @@ extern "C" {
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
+			//this is a NaN check, will only return true if the value is NaN
+			if (stretch[i] != stretch[i])
+			{
+				values[i + 3] = 0;
+				continue;
+			}
 			if (stretch[i] < minValues[i]) minValues[i] = stretch[i];
 			if (stretch[i] > maxValues[i]) maxValues[i] = stretch[i];
-			values[i+3] = (double)(stretch[i] - minValues[i]) / (double)(maxValues[i] - minValues[i]);
+			values[i + 3] = (double)(stretch[i] - minValues[i]) / (double)(maxValues[i] - minValues[i]);
 		}
 
 		//TODO split returns of IMU and stretch sensors into two functions?
 
-		//return a pointer to the last line that was read
-		return values;
+		//return a pointer to the vector
+		double* pntr = &values[0];
+		return pntr;
+	}
+
+	SMARTGLOVE_API void clearCalibration()
+	{
+		//set values that are guaranteed to be overwritten
+		for (int i = 0; i < CHANNELS; i++)
+		{
+			minValues[i] = INT_MAX;
+			maxValues[i] = INT_MIN;
+		}
 	}
 
 #ifdef __cplusplus

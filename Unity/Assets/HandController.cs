@@ -10,11 +10,11 @@ using UnityEngine;
 public class HandController:MonoBehaviour
 {	
 	//the height of the hand
-	public float palmHeight;
+	public float palmHeight = 0.25f;
 	//the width of the hand, excluding the thumb
-	public float palmWidth;
+	public float palmWidth = 1f;
 	//the length of the palm from wrist to finger base
-	public float palmLength;
+	public float palmLength = 1f;
 	//list of each segment's length, for proportions
 	private List<float> fingerLengths;
 	//list of finger rotation ranges
@@ -39,12 +39,10 @@ public class HandController:MonoBehaviour
 	[Range(-0.1f, 1.1f)]
 	public float fingerCurl;
 	
-	//what com port is the arduino connected to?
-	public int portNumber = 0;
-	//what's the baud rate?
-	public int rate = 9600;
-	//is the port open?
-	private bool connected = false;
+	//is the BLE connected?
+	[HideInInspector]
+	public bool connected = false;
+	public int ID;
 	
 	//import functions from the DLL
 	[DllImport("smartglove", EntryPoint="establishConnection")]
@@ -53,10 +51,8 @@ public class HandController:MonoBehaviour
 	public static extern bool closeConnection();
 	[DllImport("smartglove", EntryPoint="getData", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr readGlove();
-	[DllImport("smartglove", EntryPoint="calibrateMinimum")]
-	public static extern void calibrateMinimum();
-	[DllImport("smartglove", EntryPoint="calibrateMaximum")]
-	public static extern void calibrateMaximum(int sensor);
+	[DllImport("smartglove", EntryPoint="resetCalibration")]
+	public static extern void clearCalibration();
 	
 	//TODO support for multiple tinyTILES
 	//TODO initialize plugin to remove lingering variables??
@@ -70,28 +66,14 @@ public class HandController:MonoBehaviour
 	
 	public bool GloveDisconnect()
 	{
-		bool closed = closeConnection();
-		if (closed) StopCoroutine("GloveRead");
-		return closed;
+		connected = !closeConnection();
+		if (!connected) StopCoroutine("GloveRead");
+		return !connected;
 	}
 	
-	public void CalibrateMinimum()
+	public void GloveClear()
 	{
-		calibrateMinimum();
-		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
-	}
-	
-	public void CalibrateMaximum(int sensor)
-	{
-		if (sensor == -1)
-		{
-			for (int i = 0; i < 10; i++)
-			{
-				calibrateMaximum(i);
-			}
-			return;
-		}
-		calibrateMaximum(sensor);
+		clearCalibration();
 	}
 	
 	void Start()
@@ -217,35 +199,18 @@ public class HandController:MonoBehaviour
 			IntPtr ptr = readGlove();
 			Marshal.Copy(ptr, data, 0, 13);
 			
-			Debug.Log(data[0]);
+			string dat = "";
+			for (int i = 0; i < 13; i++)
+			{
+				dat += data[i].ToString() + " ";
+			}
+			Debug.Log(dat);
 			
 			//copy the orientation data (y and z negated to remove mirroring)
 			palmOrientation = new Vector3((float)data[0],(float)data[1],(float)data[2]);
 			
 			//TODO more robust matching of sensors to finger representation
 			//loop through the calibrated finger rotation data
-			String dataString = "";
-			/*int i = 3;
-			for (int v = 3; v < 13; v++)
-			{
-				dataString += data[v].ToString() + ", ";
-				if (double.IsNaN(data[v])) data[v] = 0d;
-				if (data[v] > 1d) data[v] = 1d;
-				if (data[v] < 0d) data[v] = 0d;
-				//for the first joint, take the 0-1 value as 0-90 degrees
-				if (i % 3 == 0)
-				{
-					fingerRotations[i-3] = rotationMinimum[i-3] + data[v]*rotationMaximum[i-3];
-					if (fiveSensor) fingerRotations[i-2] = fingerRotations[i-1] = data[v]*45f;
-					i += 1;
-				}
-				//for the second joint, split the 0-1 value across the second and third joint
-				else
-				{
-					if (!fiveSensor) fingerRotations[i-3] = fingerRotations[i-2] = data[v]*45f;
-					i += 2;
-				}
-			}*/
 			for (int i = 0; i < 15; i++)
 			{
 				//TODO move all of this into the library
@@ -266,7 +231,7 @@ public class HandController:MonoBehaviour
 				//otherwise, split even values among all joints of a finger
 				else
 				{
-					
+					//TODO five sensor
 				}
 			}
 			

@@ -50,24 +50,17 @@ extern "C" {
 	*/
 	SMARTGLOVE_API void closeConnection();
 	/*
-		Reads everything currently in the port buffer.
-		Sensor values returned are the ten stretch sensors, in order.
+		Reads values from the BLE peripheral.
+		Sensor values returned are the three IMU orientation
+		compents, then the ten stretch sensors, in order.
 
 		@return An array of doubles for the sensor values.
 	*/
 	SMARTGLOVE_API double* getData();
 	/*
-		Set the lower bound of sensor values.
-		Corresponds to 0.00 in the final range.
+		Clears the autocalibrated values.
 	*/
-	SMARTGLOVE_API void calibrateMinimum();
-	/*
-		Set the upper bound of sensor values.
-		Corresponds to 1.00 in the final range.
-		If the lower bound matches the upper bound,
-		the sensor is not considered calibrated.
-	*/
-	SMARTGLOVE_API void calibrateMaximum(int sensor);
+	SMARTGLOVE_API void clearCalibration();
 
 #ifdef __cplusplus
 }

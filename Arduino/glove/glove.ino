@@ -88,7 +88,7 @@ int   TRIGGER_MODE    =      TRIGGER_DISABLED;
 int   FILTER_MODE     =      FILTER_32PT;
 int   RESOLUTION_MODE =      RESOLUTION_100fF;
 
-#define NOTIFICATION_FREQUENCY 12.5
+#define NOTIFICATION_FREQUENCY 12
 #define SENSOR_FREQUENCY 50
 
 //SPI Configuration
@@ -180,6 +180,8 @@ void loop() {
     int roll_int, pitch_int, heading_int;
     float accel_x, accel_y, accel_z;
     int accel_x_int, accel_y_int, accel_z_int;
+    
+    Serial.println("keep alive");
 
     // check if it's time to read data and update the filter
     if ((millis() - lastSensor) >= sensorInterval) {
@@ -273,7 +275,7 @@ void loop() {
         RawDataIMU[10], RawDataIMU[11], RawDataIMU[12], RawDataIMU[13], RawDataIMU[14],
         RawDataIMU[15], RawDataIMU[16], RawDataIMU[17], RawDataIMU[18], RawDataIMU[19]
       };
-      imuChar.setValue(imuCharArray, 20); //notify central with new data
+      //imuChar.setValue(imuCharArray, 20); //notify central with new data
 
       //update the stretch sensor characteristic
       const unsigned char capaCharArray[20] = {
