@@ -6,6 +6,11 @@
 //using std::vector;
 //using std::string;
 
+Pose::Pose(string data)
+{
+
+}
+
 Pose::Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans)
 {
 	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
@@ -34,17 +39,29 @@ Pose::~Pose()
 
 bool Pose::operator==(Pose& curPose)
 {
+	// Run through the vector of articulations and return false if any of the values are not within range of each other.
+	vector<TolValue<double>>::iterator it1 = Articulation.begin();
+	vector<TolValue<double>>::iterator it2 = curPose.Articulation.begin();
+	for (; (it1 != Articulation.end() && it2 != curPose.Articulation.end()); ++it1, ++it2)
 	{
-		vector<TolValue<double>>::iterator it1 = Articulation.begin();
-		vector<TolValue<double>>::iterator it2 = curPose.Articulation.begin();
-		for (; (it1 != Articulation.end() && it2 != curPose.Articulation.end()); ++it1, ++it2)
+		if (*it1 != *it2)
 		{
-			if (it1 != it2)
-			{
-
-			}
+			return false;
 		}
 	}
+
+	// Run through the vector of orientations and return false if any of the values are not within range of each other.
+	it1 = Orientation.begin();
+	it2 = curPose.Orientation.begin();
+	for (; (it1 != Orientation.end() && it2 != curPose.Orientation.end()); ++it1, ++it2)
+	{
+		if (*it1 != *it2)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 string Pose::writeOut()
@@ -71,9 +88,6 @@ string Pose::writeOut()
 		output += it->tolerance;
 		output += ",";
 	}
-}
 
-void Pose::readIn(string data)
-{
-
+	return output;
 }

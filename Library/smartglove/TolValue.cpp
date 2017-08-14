@@ -20,7 +20,7 @@ TolValue<T>::TolValue(T const &mean, T const &tolerance)
 template <class T>
 bool TolValue<T>::inRange(T const &value)
 {
-	return (value >= mean - tolerance) && (value <= mean + tolerance))
+	return (value >= mean - tolerance) && (value <= mean + tolerance);
 }
 
 // Inclusive overlap. Any overlap is fine.

@@ -21,13 +21,13 @@ private:
 	vector<TolValue<double>> Orientation;
 
 public:
+	Pose(string data);
 	Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans);
 	Pose(vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation);
 	~Pose();
 
 	bool operator==(Pose& curPose);
 	string writeOut();
-	void readIn(string data);
 };
 
 #endif
