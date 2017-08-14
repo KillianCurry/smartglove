@@ -12,9 +12,14 @@ public class InterfaceController:MonoBehaviour
 	
 	private List<GameObject> glovePanels;
 	private Dictionary<int,GameObject> gloves;
+	private int highlightedGlove;
 	
 	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr findGloves();
+	[DllImport("smartglove", EntryPoint="freePointer")]
+	public static extern void freePointer(IntPtr ptr);
+	[DllImport("smartglove", EntryPoint="closeLibrary")]
+	public static extern void closeLibrary();
 	
 	void Start()
 	{
@@ -43,13 +48,14 @@ public class InterfaceController:MonoBehaviour
 		//retrieve the UUID list from the library
 		IntPtr ptr = findGloves();
 		string source = Marshal.PtrToStringAnsi(ptr);
-		Debug.Log(source);
+		freePointer(ptr);
 		//iterate through UUIDs, using space as a delimiter
 		string[] delimiters = {" "};
 		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
 		//add panels corresponding to the library's internal glove objects
 		for (int i = 0; i < UUIDs.Length; i++)
 		{
+			Debug.Log(UUIDs[i]);
 			AddPanel(i, UUIDs[i]);
 		}
 	}
@@ -74,9 +80,13 @@ public class InterfaceController:MonoBehaviour
 		gloves[ID].GetComponent<HandController>().GloveConnect();
 	}
 	
-	
 	void ClearGlove(int ID)
 	{
 		gloves[ID].GetComponent<HandController>().GloveClear();
+	}
+	
+	void OnApplicationQuit()
+	{
+		closeLibrary();
 	}
 }

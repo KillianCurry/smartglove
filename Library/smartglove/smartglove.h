@@ -69,9 +69,19 @@ extern "C" {
 	*/
 	SMARTGLOVE_API double* getData(int gloveID);
 	/*
+		Release the pointer passed to the DLL.
+
+		@param ptr The pointer to release.
+	*/
+	SMARTGLOVE_API void freePointer(char* ptr);
+	/*
 		Clears the autocalibrated values.
 	*/
 	SMARTGLOVE_API void clearCalibration(int gloveID);
+	/*
+		Cleans all the memory used by the library.
+	*/
+	SMARTGLOVE_API void closeLibrary();
 
 #ifdef __cplusplus
 }

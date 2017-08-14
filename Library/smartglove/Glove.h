@@ -33,5 +33,6 @@ public:
 	HANDLE pHandle;
 
 	Glove(std::string _UUID, int _ID);
+	~Glove();
 	void clearCalibration();
 };
