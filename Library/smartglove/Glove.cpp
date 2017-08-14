@@ -11,8 +11,9 @@
 		minValues = std::vector<int>(10, INT_MAX);
 		maxValues = std::vector<int>(10, INT_MIN);
 
-		stretch = std::vector<int>(10, 0);
-		imu = std::vector<int>(10, 0);
+		stretchRaw = std::vector<int>(10, 0);
+		imuRaw = std::vector<int>(10, 0);
+		stretch = std::vector<double>(10, 0);
 	}
 
 	Glove::~Glove()
@@ -22,8 +23,8 @@
 		//clear and free the vectors
 		minValues.clear();
 		maxValues.clear();
-		stretch.clear();
-		imu.clear();
+		stretchRaw.clear();
+		imuRaw.clear();
 	}
 	
 	void Glove::clearCalibration()

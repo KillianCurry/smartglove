@@ -274,8 +274,8 @@ extern "C" {
 		//point to the vector we want to fill
 		std::vector<int>* splitInts;
 		//use characteristic handle to understand whether this is stretch or IMU data
-		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &gloves[gloveID].stretch;
-		else splitInts = &gloves[gloveID].imu;
+		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &gloves[gloveID].stretchRaw;
+		else splitInts = &gloves[gloveID].imuRaw;
 
 		//the values are stored as 2-bit short integers
 		//convert them with bitwise math
@@ -318,22 +318,23 @@ extern "C" {
 		//TODO return a 2D array
 		//allocate enough memory for all the stretch channels + xyz orientation
 		std::vector<double> values(CHANNELS + 3, 0);
-		values[0] = ((double)gloves[gloveID].imu[0] / (double)100);
-		values[1] = ((double)gloves[gloveID].imu[1] / (double)100);
-		values[2] = ((double)gloves[gloveID].imu[2] / (double)100);
+		values[0] = ((double)gloves[gloveID].imuRaw[0] / (double)100);
+		values[1] = ((double)gloves[gloveID].imuRaw[1] / (double)100);
+		values[2] = ((double)gloves[gloveID].imuRaw[2] / (double)100);
 		for (int i = 0; i < CHANNELS; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
 			//this is a NaN check, will only return true if the value is NaN
-			if (gloves[gloveID].stretch[i] != gloves[gloveID].stretch[i])
+			if (gloves[gloveID].stretchRaw[i] != gloves[gloveID].stretchRaw[i])
 			{
 				values[i + 3] = 0;
 				continue;
 			}
-			if (gloves[gloveID].stretch[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretch[i];
-			if (gloves[gloveID].stretch[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretch[i];
-			values[i + 3] = (double)(gloves[gloveID].stretch[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
+			if (gloves[gloveID].stretchRaw[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretchRaw[i];
+			if (gloves[gloveID].stretchRaw[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretchRaw[i];
+			gloves[gloveID].stretch[i] = (double)(gloves[gloveID].stretchRaw[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
+			values[i + 3] = gloves[gloveID].stretch[i];
 		}
 
 		//TODO split returns of IMU and stretch sensors into two functions?
