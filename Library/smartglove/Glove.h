@@ -24,8 +24,9 @@ public:
 	std::vector<int> maxValues;
 
 	//the processed sensor values
-	std::vector<int> stretch;
-	std::vector<int> imu;
+	std::vector<int> stretchRaw;
+	std::vector<int> imuRaw;
+	std::vector<double> stretch;
 
 	int ID;
 	std::string UUIDstr;
