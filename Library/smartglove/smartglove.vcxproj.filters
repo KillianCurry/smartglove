@@ -21,12 +21,18 @@
     <ClInclude Include="SerialPort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Glove.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="smartglove.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SerialPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Glove.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

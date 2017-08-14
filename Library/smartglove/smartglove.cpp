@@ -20,14 +20,6 @@ using std::endl;
 extern "C" {
 #endif
 	//TODO redesign architecture to use shorts? (values from BLE are 2-byte)
-	//the minimum and maximum raw values
-	std::vector<int> minValues(CHANNELS, INT_MAX);
-	std::vector<int> maxValues(CHANNELS, INT_MIN);
-
-	std::vector<int> stretch(CHANNELS, 0);
-	std::vector<int> imu(CHANNELS, 0);
-
-	HANDLE pHandle;
 
 	SMARTGLOVE_API HANDLE getHandle(__in GUID pGUID)
 	{
@@ -82,29 +74,23 @@ extern "C" {
 		return hComm;
 	}
 	
-	//TODO replace mallocs with vectors
-	SMARTGLOVE_API bool establishConnection()
+	SMARTGLOVE_API bool establishConnection(int gloveID)
 	{
-		//set values that are guaranteed to be overwritten
-		for (int i = 0; i < CHANNELS; i++)
-		{
-			minValues[i] = INT_MAX;
-			maxValues[i] = INT_MIN;
-		}
 
 		//TODO get GUID from function argument string
 		GUID pGUID;
-		CLSIDFromString(TEXT(UUID_TO_SEARCH), &pGUID);
-		pHandle = getHandle(pGUID);
+		std::wstring wideUUIDstr = std::wstring(gloves[gloveID].UUIDstr.begin(), gloves[gloveID].UUIDstr.end());
+		CLSIDFromString(wideUUIDstr.c_str(), &pGUID);
+		gloves[gloveID].pHandle = getHandle(pGUID);
 
 		HRESULT hr;
 
-		#pragma region Find Service
+#pragma region Find Service
 
 		//check how many services there are by sending blank arguments to the GetServices() function
 		USHORT serviceCount;
 		hr = BluetoothGATTGetServices(
-			pHandle,
+			gloves[gloveID].pHandle,
 			0,
 			NULL,
 			&serviceCount,
@@ -125,7 +111,7 @@ extern "C" {
 		//actually retrieve the services
 		USHORT numServices;
 		hr = BluetoothGATTGetServices(
-			pHandle,
+			gloves[gloveID].pHandle,
 			serviceCount,
 			serviceBuffer,
 			&numServices,
@@ -136,12 +122,12 @@ extern "C" {
 		//report if there's an issue with reading the services
 		if (hr != S_OK) printf("Issue with reading services.");
 
-	#pragma endregion
+#pragma endregion
 
-		#pragma region Find Characteristics
+#pragma region Find Characteristics
 		USHORT charCount;
 		hr = BluetoothGATTGetCharacteristics(
-			pHandle,
+			gloves[gloveID].pHandle,
 			&serviceBuffer[0],
 			0,
 			NULL,
@@ -167,7 +153,7 @@ extern "C" {
 		//actually retrieve the characteristics
 		USHORT numChars;
 		hr = BluetoothGATTGetCharacteristics(
-			pHandle,
+			gloves[gloveID].pHandle,
 			&serviceBuffer[0],
 			charCount,
 			charBuffer,
@@ -178,15 +164,15 @@ extern "C" {
 		if (hr != S_OK) printf("Issue with reading characteristics.");
 
 		printf("%d characteristics found?\n", numChars);
-	#pragma endregion
+#pragma endregion
 
-		#pragma region Set Notifications
+#pragma region Set Notifications
 		for (int ch = 0; ch < 2; ch++)
 		{
 			//retrieve descriptor buffer size
 			USHORT descCount;
 			hr = BluetoothGATTGetDescriptors(
-				pHandle,
+				gloves[gloveID].pHandle,
 				&charBuffer[0],
 				0,
 				NULL,
@@ -207,7 +193,7 @@ extern "C" {
 			//retrieve the descriptors
 			USHORT numDescs;
 			hr = BluetoothGATTGetDescriptors(
-				pHandle,
+				gloves[gloveID].pHandle,
 				&charBuffer[ch],
 				descCount,
 				descBuffer,
@@ -224,7 +210,7 @@ extern "C" {
 			newVal.ClientCharacteristicConfiguration.IsSubscribeToNotification = TRUE;
 
 			hr = BluetoothGATTSetDescriptorValue(
-				pHandle,
+				gloves[gloveID].pHandle,
 				currDesc,
 				&newVal,
 				BLUETOOTH_GATT_FLAG_NONE);
@@ -235,38 +221,62 @@ extern "C" {
 
 			BTH_LE_GATT_EVENT_TYPE eType = CharacteristicValueChangedEvent;
 			BLUETOOTH_GATT_VALUE_CHANGED_EVENT_REGISTRATION eParam;
-			eParam.Characteristics[0] = charBuffer[ch];
 			eParam.NumCharacteristics = 1;
+			eParam.Characteristics[0] = charBuffer[ch];
 
 			BLUETOOTH_GATT_EVENT_HANDLE eHandle;
 
 			hr = BluetoothGATTRegisterEvent(
-				pHandle,
+				gloves[gloveID].pHandle,
 				eType,
 				&eParam,
-				notificationResponse,
+				(PFNBLUETOOTH_GATT_EVENT_CALLBACK)notificationResponse,
 				NULL,
 				&eHandle,
 				BLUETOOTH_GATT_FLAG_NONE);
 
 			if (hr != S_OK) printf("\nERROR: could not register notification response.\n");
 		}
-		#pragma endregion
+
+		typedef union
+		{
+			BTH_LE_GATT_CHARACTERISTIC_VALUE newValue;
+			struct
+			{
+				ULONG DataSize;
+				UCHAR Data[1];
+			} myValue;
+		} rezolvare;
+
+		rezolvare newValue_base;
+		RtlZeroMemory(&newValue_base.newValue, sizeof(rezolvare));
+		newValue_base.newValue.DataSize = sizeof(UCHAR);
+		newValue_base.myValue.Data[0] = (UCHAR)gloveID;
+		//http://community.silabs.com/t5/Projects/Setting-BLE-characteristic-values-a-Thunderboard-Sense-practical/td-p/203691
+		hr = BluetoothGATTSetCharacteristicValue(
+			gloves[gloveID].pHandle,
+			&charBuffer[2],
+			&newValue_base.newValue,
+			NULL,
+			BLUETOOTH_GATT_FLAG_NONE);
+#pragma endregion
 		//TODO return false if an error is encountered
 		return true;
 	}
 
-	SMARTGLOVE_API void notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
+	SMARTGLOVE_API void CALLBACK notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 	{
 		PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
 
 		//TODO fix to register handles on notification registration
+		int gloveID = ValueChangedEventParameters->CharacteristicValue->Data[0];
 
+		if (gloveID == 216) gloveID = 0;
 		//point to the vector we want to fill
 		std::vector<int>* splitInts;
 		//use characteristic handle to understand whether this is stretch or IMU data
-		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &stretch;
-		else splitInts = &imu;
+		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &gloves[gloveID].stretch;
+		else splitInts = &gloves[gloveID].imu;
 
 		//the values are stored as 2-bit short integers
 		//convert them with bitwise math
@@ -274,38 +284,56 @@ extern "C" {
 		{
 			int val = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
 			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+
 			(*splitInts)[i] = val;
 		}
 	}
 
-	SMARTGLOVE_API void closeConnection()
+	SMARTGLOVE_API void closeConnection(int gloveID)
 	{
 		//TODO is this all that's required to close the BLE connection?
-		CloseHandle(pHandle);
+		CloseHandle(gloves[gloveID].pHandle);
+	}
+
+	SMARTGLOVE_API char* findGloves()
+	{
+		//TODO actually find paired smartgloves and their UUIDs
+		Glove glove0("{00601001-7374-7265-7563-6873656e7365}", 0);
+		gloves.push_back(glove0);
+		Glove glove1("{00602001-7374-7265-7563-6873656e7365}", 1);
+		gloves.push_back(glove1);
+		std::string str = "";
+		for each (Glove g in gloves)
+		{
+			str += g.UUIDstr + " ";
+		}
+		//TODO release this pointer in another function
+		return &str[0];
 	}
 
 	//TODO consider just calling a main update loop that calls getData()
 
-	SMARTGLOVE_API double* getData()
+	SMARTGLOVE_API double* getData(int gloveID)
 	{
+		//TODO return a 2D array
 		//allocate enough memory for all the stretch channels + xyz orientation
 		std::vector<double> values(CHANNELS + 3, 0);
-		values[0] = ((double)imu[0]/ (double)100);
-		values[1] = ((double)imu[1]/ (double)100);
-		values[2] = ((double)imu[2]/ (double)100);
+		values[0] = ((double)gloves[gloveID].imu[0]/ (double)100);
+		values[1] = ((double)gloves[gloveID].imu[1]/ (double)100);
+		values[2] = ((double)gloves[gloveID].imu[2]/ (double)100);
 		for (int i = 0; i < CHANNELS; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
 			//this is a NaN check, will only return true if the value is NaN
-			if (stretch[i] != stretch[i])
+			if (gloves[gloveID].stretch[i] != gloves[gloveID].stretch[i])
 			{
 				values[i + 3] = 0;
 				continue;
 			}
-			if (stretch[i] < minValues[i]) minValues[i] = stretch[i];
-			if (stretch[i] > maxValues[i]) maxValues[i] = stretch[i];
-			values[i + 3] = (double)(stretch[i] - minValues[i]) / (double)(maxValues[i] - minValues[i]);
+			if (gloves[gloveID].stretch[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretch[i];
+			if (gloves[gloveID].stretch[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretch[i];
+			values[i + 3] = (double)(gloves[gloveID].stretch[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
 		}
 
 		//TODO split returns of IMU and stretch sensors into two functions?
@@ -315,13 +343,13 @@ extern "C" {
 		return pntr;
 	}
 
-	SMARTGLOVE_API void clearCalibration()
+	SMARTGLOVE_API void clearCalibration(int gloveID)
 	{
 		//set values that are guaranteed to be overwritten
 		for (int i = 0; i < CHANNELS; i++)
 		{
-			minValues[i] = INT_MAX;
-			maxValues[i] = INT_MIN;
+			gloves[gloveID].minValues[i] = INT_MAX;
+			gloves[gloveID].maxValues[i] = INT_MIN;
 		}
 	}
 

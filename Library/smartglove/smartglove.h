@@ -20,10 +20,14 @@
 #include <string>
 #include <sstream>
 #include <limits.h>
+#include "Glove.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+	std::vector<Glove> gloves;
+
 	/*
 		Converts a UUID string to a handle.
 
@@ -36,7 +40,7 @@ extern "C" {
 
 		@return Whether the connection was established successfully.
 	*/
-	SMARTGLOVE_API bool establishConnection();
+	SMARTGLOVE_API bool establishConnection(int gloveID);
 	/*
 		Processes values when a characteristic changes.
 
@@ -44,11 +48,18 @@ extern "C" {
 		@param EventOutParameter
 		@param Context
 	*/
-	SMARTGLOVE_API void notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context);
+	SMARTGLOVE_API void CALLBACK notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context);
 	/*
 		Closes the BLE connection.
 	*/
-	SMARTGLOVE_API void closeConnection();
+	SMARTGLOVE_API void closeConnection(int gloveID);
+	/*
+		Finds all paired StretchSense gloves and generates
+		corresponding Glove objects for the gloves vector.
+
+		@return An ordered string of glove UUIDs, separated by spaces
+	*/
+	SMARTGLOVE_API char* findGloves();
 	/*
 		Reads values from the BLE peripheral.
 		Sensor values returned are the three IMU orientation
@@ -56,11 +67,11 @@ extern "C" {
 
 		@return An array of doubles for the sensor values.
 	*/
-	SMARTGLOVE_API double* getData();
+	SMARTGLOVE_API double* getData(int gloveID);
 	/*
 		Clears the autocalibrated values.
 	*/
-	SMARTGLOVE_API void clearCalibration();
+	SMARTGLOVE_API void clearCalibration(int gloveID);
 
 #ifdef __cplusplus
 }

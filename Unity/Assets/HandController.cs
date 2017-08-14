@@ -46,34 +46,34 @@ public class HandController:MonoBehaviour
 	
 	//import functions from the DLL
 	[DllImport("smartglove", EntryPoint="establishConnection")]
-	public static extern bool openConnection();
+	public static extern bool openConnection(int gloveID);
 	[DllImport("smartglove", EntryPoint="closeConnection")]
-	public static extern bool closeConnection();
+	public static extern bool closeConnection(int gloveID);
 	[DllImport("smartglove", EntryPoint="getData", CallingConvention = CallingConvention.Cdecl)]
-	public static extern IntPtr readGlove();
-	[DllImport("smartglove", EntryPoint="resetCalibration")]
-	public static extern void clearCalibration();
+	public static extern IntPtr readGlove(int gloveID);
+	[DllImport("smartglove", EntryPoint="clearCalibration")]
+	public static extern void clearCalibration(int gloveID);
 	
 	//TODO support for multiple tinyTILES
 	//TODO initialize plugin to remove lingering variables??
 	
 	public bool GloveConnect()
 	{
-		connected = openConnection();
+		connected = openConnection(ID);
 		if (connected) StartCoroutine("GloveRead");
 		return connected;
 	}
 	
 	public bool GloveDisconnect()
 	{
-		connected = !closeConnection();
+		connected = !closeConnection(ID);
 		if (!connected) StopCoroutine("GloveRead");
 		return !connected;
 	}
 	
 	public void GloveClear()
 	{
-		clearCalibration();
+		clearCalibration(ID);
 	}
 	
 	void Start()
@@ -196,7 +196,7 @@ public class HandController:MonoBehaviour
 		{
 			//copy data from the DLL's unmanaged memory into a managed array
 			double[] data = new double[13];
-			IntPtr ptr = readGlove();
+			IntPtr ptr = readGlove(ID);
 			Marshal.Copy(ptr, data, 0, 13);
 			
 			string dat = "";

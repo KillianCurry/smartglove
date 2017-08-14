@@ -126,7 +126,7 @@ GameObject:
   - component: {fileID: 222919992156642230}
   - component: {fileID: 114150778124717444}
   m_Layer: 5
-  m_Name: Glove 0
+  m_Name: Glove Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -589,7 +589,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b29cc2fbb9b05840b935544a8c68a2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  glovePrefab: {fileID: 1416404609520152, guid: 952822c0ae725a84da8a79868002cad1,
+  glovePrefab: {fileID: 1911533424128774, guid: c98f07d515775c34cbcb999c7cf91b42,
     type: 2}
 --- !u!1 &1144658051
 GameObject:

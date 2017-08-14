@@ -1,5 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,10 +13,14 @@ public class InterfaceController:MonoBehaviour
 	private List<GameObject> glovePanels;
 	private Dictionary<int,GameObject> gloves;
 	
+	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
+	public static extern IntPtr findGloves();
+	
 	void Start()
 	{
 		//initialize a list of panels to reference
 		glovePanels = new List<GameObject>();
+		//use a dictionary to refer to gloves
 		gloves = new Dictionary<int,GameObject>();
 		Populate();
 	}
@@ -33,14 +40,18 @@ public class InterfaceController:MonoBehaviour
 	
 	void Populate()
 	{
-		//TODO call a function to return a string of ordered UUIDs from paired gloves
-		//basically just copying the internal list from the library
-		string UUIDs = "00601001-7374-7265-7563-6873656e7365 00601002-7374-7265-7563-6873656e7365 00601003-7374-7265-7563-6873656e7365";
-		
-		//iterate through substrings, using space as a delimiter
-		
-		AddPanel(0, "00601001-7374-7265-7563-6873656e7365");
-		AddPanel(1, "00601001-7374-7265-7563-6873656e7365");
+		//retrieve the UUID list from the library
+		IntPtr ptr = findGloves();
+		string source = Marshal.PtrToStringAnsi(ptr);
+		Debug.Log(source);
+		//iterate through UUIDs, using space as a delimiter
+		string[] delimiters = {" "};
+		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+		//add panels corresponding to the library's internal glove objects
+		for (int i = 0; i < UUIDs.Length; i++)
+		{
+			AddPanel(i, UUIDs[i]);
+		}
 	}
 	
 	void AddGlove(int ID)
