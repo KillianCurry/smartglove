@@ -15,11 +15,16 @@
 		imu = std::vector<int>(10, 0);
 	}
 
-	//TODO replace mallocs with vectors
-	
-
-	
-	
+	Glove::~Glove()
+	{
+		//close the BLE connection
+		CloseHandle(pHandle);
+		//clear and free the vectors
+		minValues.clear();
+		maxValues.clear();
+		stretch.clear();
+		imu.clear();
+	}
 	
 	void Glove::clearCalibration()
 	{

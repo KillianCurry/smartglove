@@ -73,10 +73,9 @@ extern "C" {
 		SetupDiDestroyDeviceInfoList(hDI);
 		return hComm;
 	}
-	
+
 	SMARTGLOVE_API bool establishConnection(int gloveID)
 	{
-
 		//TODO get GUID from function argument string
 		GUID pGUID;
 		std::wstring wideUUIDstr = std::wstring(gloves[gloveID].UUIDstr.begin(), gloves[gloveID].UUIDstr.end());
@@ -302,13 +301,14 @@ extern "C" {
 		gloves.push_back(glove0);
 		Glove glove1("{00602001-7374-7265-7563-6873656e7365}", 1);
 		gloves.push_back(glove1);
-		std::string str = "";
+		std::string str = "\0";
 		for each (Glove g in gloves)
 		{
 			str += g.UUIDstr + " ";
 		}
-		//TODO release this pointer in another function
-		return &str[0];
+		std::vector<char> charStr(str.begin(), str.end());
+		charStr.push_back('\0');
+		return &charStr[0];
 	}
 
 	//TODO consider just calling a main update loop that calls getData()
@@ -318,9 +318,9 @@ extern "C" {
 		//TODO return a 2D array
 		//allocate enough memory for all the stretch channels + xyz orientation
 		std::vector<double> values(CHANNELS + 3, 0);
-		values[0] = ((double)gloves[gloveID].imu[0]/ (double)100);
-		values[1] = ((double)gloves[gloveID].imu[1]/ (double)100);
-		values[2] = ((double)gloves[gloveID].imu[2]/ (double)100);
+		values[0] = ((double)gloves[gloveID].imu[0] / (double)100);
+		values[1] = ((double)gloves[gloveID].imu[1] / (double)100);
+		values[2] = ((double)gloves[gloveID].imu[2] / (double)100);
 		for (int i = 0; i < CHANNELS; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
@@ -343,6 +343,11 @@ extern "C" {
 		return pntr;
 	}
 
+	SMARTGLOVE_API void freePointer(char* ptr)
+	{
+		delete ptr;
+	}
+
 	SMARTGLOVE_API void clearCalibration(int gloveID)
 	{
 		//set values that are guaranteed to be overwritten
@@ -352,7 +357,12 @@ extern "C" {
 			gloves[gloveID].maxValues[i] = INT_MIN;
 		}
 	}
-
+	
+	SMARTGLOVE_API void closeLibrary()
+	{
+		gloves.clear();
+	}
+	
 	SMARTGLOVE_API void capturePose(int gloveID)
 	{
 
