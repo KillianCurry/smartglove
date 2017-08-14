@@ -83,6 +83,12 @@ extern "C" {
 	*/
 	SMARTGLOVE_API void closeLibrary();
 
+	SMARTGLOVE_API void capturePose(int gloveID);
+
+	SMARTGLOVE_API void writeOutPoses(std::string fileName);
+
+	SMARTGLOVE_API void readInPoses(std::string fileName);
+
 #ifdef __cplusplus
 }
 #endif
