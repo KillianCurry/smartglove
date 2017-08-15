@@ -15,14 +15,14 @@ Pose::Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans)
 {
 	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
 	{
-		TolValue<double> temp = *(new TolValue<double>(*it));
-		this->Articulation.push_back(temp);
+		//TolValue<double> temp = *(new TolValue<double>(*it));
+		//this->Articulation.push_back(temp);
 	}
 	
 	for (vector<double>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
 	{
-		TolValue<double> temp = *(new TolValue<double>(*it));
-		this->Orientation.push_back(temp);
+		//TolValue<double> temp = *(new TolValue<double>(*it));
+		//this->Orientation.push_back(temp);
 	}
 }
 
