@@ -366,7 +366,8 @@ extern "C" {
 	
 	SMARTGLOVE_API void capturePose(int gloveID)
 	{
-
+		Pose *capture;
+		capture = new Pose();
 	}
 
 	SMARTGLOVE_API void writeOutPoses(std::string fileName)
