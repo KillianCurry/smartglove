@@ -152,14 +152,15 @@ public class HandController:MonoBehaviour
 	
 	void Update()
 	{
+		transform.localScale = new Vector3(handedness, 1, 1);
 		//update joint angles and palm orientation to match input
 		if (connected)
 		{
-			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, handedness*(float)fingerRotations[0]);
+			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, (float)fingerRotations[0]);
 			for (int r = 1; r < fingerRotations.Count; r++)
 			{
 				float spread = 0f;
-				if (r % 3 == 0) spread = handedness*((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
+				if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
 				joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], spread, 0f);
 			}
 			this.transform.localRotation = Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
@@ -168,12 +169,12 @@ public class HandController:MonoBehaviour
 		else
 		{
 			fingerRotations[0] = fingerCurl*90f;
-			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, handedness*(float)fingerRotations[0]);
+			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, (float)fingerRotations[0]);
 			for (int r = 1; r < fingerRotations.Count; r++)
 			{
 				fingerRotations[r] = fingerCurl*90f;
-				float spread = 0f;//joints[r].transform.localRotation.eulerAngles.y;
-				if (r % 3 == 0) spread = handedness*((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
+				float spread = 0f;
+				if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
 				joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], spread, 0f);
 			}
 		}
@@ -255,6 +256,8 @@ public class HandController:MonoBehaviour
 		obj.transform.localPosition = new Vector3(0f, 0f, obj.transform.localScale.z/2f);
 		//child to the heirarchy root
 		obj.transform.SetParent(this.transform, false);
+		//delete the box collider unity generates
+		Destroy(obj.GetComponent<BoxCollider>());
 		
 		//previous joint transform to use as the parent of the next joint in a finger
 		Transform prev;
@@ -264,8 +267,8 @@ public class HandController:MonoBehaviour
 		//generate first thumb joint
 		fingerRotations.Add(0d);
 		GameObject empty = new GameObject("joint0_0");
-		empty.transform.localPosition = new Vector3(handedness*-palmWidth/4f, palmHeight/2f, 0f);
-		empty.transform.localRotation = Quaternion.Euler(0f, handedness*-20f, handedness*45f);
+		empty.transform.localPosition = new Vector3(-palmWidth/4f, palmHeight/2f, 0f);
+		empty.transform.localRotation = Quaternion.Euler(0f, -20f, 45f);
 		empty.transform.SetParent(this.transform, false);
 		joints.Add(empty);
 		prev = empty.transform;
@@ -273,18 +276,19 @@ public class HandController:MonoBehaviour
 		obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 		obj.name = "finger0_0";
 		obj.transform.localScale = new Vector3(palmWidth/2f, palmHeight, fingerLengths[0]);
-		obj.transform.localPosition = new Vector3(handedness*-palmWidth/4f, -palmHeight/2f, fingerLengths[0]/2f);
+		obj.transform.localPosition = new Vector3(-palmWidth/4f, -palmHeight/2f, fingerLengths[0]/2f);
 		obj.transform.SetParent(empty.transform, false);
+		Destroy(obj.GetComponent<BoxCollider>());
 		
 		//generate rest of thumb
-		prev = AddJoint(prev, new Vector3(handedness*-3f*palmWidth/8f, 0f, fingerLengths[0]), 0, 1);
+		prev = AddJoint(prev, new Vector3(-3f*palmWidth/8f, 0f, fingerLengths[0]), 0, 1);
 		prev = AddSegment(0, 1, prev);
 		AddSegment(0, 2, prev);
 		
 		//generate fingers
 		for (int i = 1; i < 5; i++)
 		{
-			prev = AddJoint(this.transform, new Vector3(handedness*(((float)(i-1) * (palmWidth/4f)) - ((palmWidth / 2f) - (palmWidth / 8f))), 0f, palmLength), i, 0);
+			prev = AddJoint(this.transform, new Vector3((((float)(i-1) * (palmWidth/4f)) - ((palmWidth / 2f) - (palmWidth / 8f))), 0f, palmLength), i, 0);
 			for (int j = 0; j < 3; j++)
 			{
 				prev = AddSegment(i, j, prev);
@@ -300,7 +304,7 @@ public class HandController:MonoBehaviour
 		if (joint == 0) position += Vector3.up*palmHeight/2f;
 		empty.transform.localPosition = position;
 		float spread = 0f;
-		if (joint == 0) spread = handedness*((finger-2)*5f);
+		if (joint == 0) spread = ((finger-2)*5f);
 		empty.transform.localRotation = Quaternion.Euler((float)fingerRotations.Last(), spread, 0f);
 		joints.Add(empty);
 		return empty.transform;
@@ -316,6 +320,7 @@ public class HandController:MonoBehaviour
 		geometry.transform.localScale = new Vector3(palmWidth/4f, palmHeight, length);
 		geometry.transform.SetParent(previous, false);
 		geometry.transform.localPosition = new Vector3(0f, -palmHeight/2f, length/2f);
+		Destroy(geometry.GetComponent<BoxCollider>());
 		
 		if (joint == 2) return null;
 		
