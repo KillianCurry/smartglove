@@ -388,9 +388,10 @@ extern "C" {
 
 	}
 
-	SMARTGLOVE_API void checkPoseName(std::string poseName)
+	SMARTGLOVE_API bool checkPoseName(int gloveID, std::string poseName)
 	{
-		Pose *pose;
+		Pose *pose = NULL;
+		Pose *curPose = NULL;
 		
 		// Find the first pose in the list with a matching name.
 		for (std::vector<Pose>::iterator it = poses.begin(); it != poses.end(); ++it)
@@ -402,9 +403,21 @@ extern "C" {
 			}
 		}
 
+		if (pose == NULL) return false;
 
+		// Construct a pose from the current hand data.
+		curPose = new Pose(poseName, gloves[gloveID].stretch, gloves[gloveID].imuRaw);
+
+		// Check if the two poses are within tolerances.
+		if (*pose == *curPose)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 #ifdef __cplusplus
 }
 #endif
+

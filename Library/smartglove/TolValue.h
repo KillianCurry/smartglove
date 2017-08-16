@@ -76,5 +76,4 @@ bool TolValue<T>::operator!=(const TolValue<T>& value)
 	return !(*this == value);
 }
 
-
 #endif

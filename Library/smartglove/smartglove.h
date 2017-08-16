@@ -92,7 +92,7 @@ extern "C" {
 
 	SMARTGLOVE_API void readInPoses(std::string fileName);
 
-	SMARTGLOVE_API void checkPoseName(std::string poseName);
+	SMARTGLOVE_API bool checkPoseName(int gloveID, std::string poseName);
 #ifdef __cplusplus
 }
 #endif

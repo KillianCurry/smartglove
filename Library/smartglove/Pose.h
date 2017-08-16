@@ -13,7 +13,6 @@
 using std::vector;
 using std::string;
 
-
 class Pose
 {
 private:
