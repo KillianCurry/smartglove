@@ -6,7 +6,6 @@
 using std::cout;
 using std::endl;
 
-
 #ifdef SMARTGLOVE_EXPORTS
 #define SMARTGLOVE_API __declspec(dllexport)
 #else
@@ -364,19 +363,45 @@ extern "C" {
 		gloves.clear();
 	}
 	
-	SMARTGLOVE_API void capturePose(int gloveID)
+	SMARTGLOVE_API void capturePose(int gloveID, std::string poseName)
 	{
 		Pose *capture;
-		capture = new Pose();
+		capture = new Pose(poseName, gloves[gloveID].stretch, gloves[gloveID].imuRaw);
+		poses.push_back(*capture); //Add a check for poses with the same name?
 	}
 
 	SMARTGLOVE_API void writeOutPoses(std::string fileName)
 	{
+		std::ofstream file;
+		file.open(fileName);
+		
+		for (std::vector<Pose>::iterator it = poses.begin(); it != poses.end(); ++it)
+		{
+			file << it->writeOut();
+		}
 
+		file.close();
 	}
 
 	SMARTGLOVE_API void readInPoses(std::string fileName)
 	{
+
+	}
+
+	SMARTGLOVE_API void checkPoseName(std::string poseName)
+	{
+		Pose *pose;
+		
+		// Find the first pose in the list with a matching name.
+		for (std::vector<Pose>::iterator it = poses.begin(); it != poses.end(); ++it)
+		{
+			if (it->name == poseName)
+			{
+				pose = &(*it);
+				break;
+			}
+		}
+
 
 	}
 

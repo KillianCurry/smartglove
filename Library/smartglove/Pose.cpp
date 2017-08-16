@@ -6,27 +6,44 @@
 //using std::vector;
 //using std::string;
 
-Pose::Pose(string data)
+Pose::Pose(string name, string data)
 {
 
 }
 
-Pose::Pose(vector<double> &ArticulationMeans, vector<double> &OrientationMeans)
+Pose::Pose(string name, vector<double> &ArticulationMeans, vector<double> &OrientationMeans)
 {
 	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
 	{
-		//TolValue<double> temp = *(new TolValue<double>(*it));
-		//this->Articulation.push_back(temp);
+		TolValue<double> temp = *(new TolValue<double>(*it));
+		this->Articulation.push_back(temp);
 	}
 	
 	for (vector<double>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
 	{
-		//TolValue<double> temp = *(new TolValue<double>(*it));
-		//this->Orientation.push_back(temp);
+		TolValue<double> temp = *(new TolValue<double>(*it));
+		this->Orientation.push_back(temp);
 	}
 }
 
-Pose::Pose(vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation)
+
+//For testing
+Pose::Pose(string name, vector<double> &ArticulationMeans, vector<int> &OrientationMeans)
+{
+	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
+	{
+		TolValue<double> temp = *(new TolValue<double>(*it));
+		this->Articulation.push_back(temp);
+	}
+
+	for (vector<int>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
+	{
+		TolValue<double> temp = *(new TolValue<double>((double)*it));
+		this->Orientation.push_back(temp);
+	}
+}
+
+Pose::Pose(string name, vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation)
 {
 	this->Articulation = Articulation;
 	this->Orientation = Orientation;
@@ -67,9 +84,10 @@ bool Pose::operator==(Pose& curPose)
 string Pose::writeOut()
 {
 	string output = "";
-	output += "Pose,";
-	output += "S"; //Stretch Sensors
-	output += Orientation.size();
+	output += "Pose:";
+	output += name;
+	output += ",S"; //Stretch Sensors
+	output += Articulation.size();
 	output += ",";
 	for (vector<TolValue<double>>::iterator it = Articulation.begin(); it != Articulation.end(); ++it)
 	{
@@ -88,6 +106,6 @@ string Pose::writeOut()
 		output += it->tolerance;
 		output += ",";
 	}
-
+	output += '\n';
 	return output;
 }

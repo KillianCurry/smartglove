@@ -20,6 +20,8 @@
 #include <string>
 #include <sstream>
 #include <limits.h>
+#include <iostream>
+#include <fstream>
 #include "Glove.h"
 #include "Pose.h"
 
@@ -84,12 +86,13 @@ extern "C" {
 	*/
 	SMARTGLOVE_API void closeLibrary();
 
-	SMARTGLOVE_API void capturePose(int gloveID);
+	SMARTGLOVE_API void capturePose(int gloveID, std::string poseName);
 
 	SMARTGLOVE_API void writeOutPoses(std::string fileName);
 
 	SMARTGLOVE_API void readInPoses(std::string fileName);
 
+	SMARTGLOVE_API void checkPoseName(std::string poseName);
 #ifdef __cplusplus
 }
 #endif

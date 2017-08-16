@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GLOVE_H
+#define GLOVE_H
+
 #include <stdio.h>
 #include <windows.h>
 #include <setupapi.h>
@@ -11,7 +13,6 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <string>
 #pragma comment(lib, "SetupAPI")
 #pragma comment(lib, "BluetoothApis.lib")
 #define CHANNELS 10
@@ -37,3 +38,5 @@ public:
 	~Glove();
 	void clearCalibration();
 };
+
+#endif
