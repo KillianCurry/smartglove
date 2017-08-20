@@ -16,6 +16,7 @@ public class InterfaceController:MonoBehaviour
 	private List<GameObject> leftPairSlots;
 	private List<GameObject> rightPairSlots;
 	private List<Vector3> glovePositions;
+	private float gloveSeparation;
 	private int highlightedGlove;
 	private Vector3 dragStart;
 	private Transform originalParent;
@@ -39,12 +40,10 @@ public class InterfaceController:MonoBehaviour
 		rightPairSlots = new List<GameObject>();
 		glovePositions = new List<Vector3>();
 		glovePositions.Add(Vector3.zero);
-		glovePositions.Add(Vector3.up * 1f);
 		glovePositions.Add(Vector3.up * 2f);
+		glovePositions.Add(Vector3.up * 4f);
+		gloveSeparation = 2.2f;
 		Populate();
-		AddPair();
-		AddPair();
-		AddPair();
 	}
 	
 	//add a new glove 
@@ -81,9 +80,10 @@ public class InterfaceController:MonoBehaviour
 	void Populate()
 	{
 		//retrieve the UUID list from the library
-		IntPtr ptr = findGloves();
-		string source = Marshal.PtrToStringAnsi(ptr);
-		freePointer(ptr);
+		//IntPtr ptr = findGloves();
+		//string source = Marshal.PtrToStringAnsi(ptr);
+		//freePointer(ptr);
+		string source = "00601001-7374-7265-7563-6873656e7365 00602001-7374-7265-7563-6873656e7365 00603001-7374-7265-7563-6873656e7365 00604001-7374-7265-7563-6873656e7365 00605001-7374-7265-7563-6873656e7365";
 		//iterate through UUIDs, using space as a delimiter
 		string[] delimiters = {" "};
 		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
@@ -148,7 +148,7 @@ public class InterfaceController:MonoBehaviour
 		{
 			gloves[pairID].GetComponent<HandController>().handedness = pairHand;
 			int pair = (int)Char.GetNumericValue(pairSlot.name[1]);
-			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * 1.3f;
+			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}
 		
 		//make block draggable
@@ -162,6 +162,9 @@ public class InterfaceController:MonoBehaviour
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[2].eventID = EventTriggerType.PointerUp;
 		trigger.triggers[2].callback.AddListener(delegate { DropPairBlock(pairBlock); });
+		
+		//add a new row if all pairs are filled
+		FindSlot();
 	}
 	
 	GameObject FindSlot()
@@ -183,7 +186,7 @@ public class InterfaceController:MonoBehaviour
 	GameObject AddPair()
 	{
 		int pair = leftPairSlots.Count;
-		transform.GetChild(1).GetComponent<RectTransform>().sizeDelta = new Vector2(80f, 35f * pair);
+		transform.GetChild(1).GetComponent<RectTransform>().sizeDelta = new Vector2(80f, 30f * (pair+1));
 		GameObject leftSlot = CreatePairSlot();
 		RectTransform leftRect = leftSlot.GetComponent<RectTransform>();
 		leftSlot.name = "L" + pair.ToString();
@@ -222,6 +225,7 @@ public class InterfaceController:MonoBehaviour
 		//if we're above a viable slot, reassign pairblock to slot
 		Transform newParent = originalParent;
 		//loop through open slots
+		//TODO increase droppable zone to fill margins
 		for (int i = 0; i < leftPairSlots.Count; i++)
 		{
 			Rect slotRect = leftPairSlots[i].GetComponent<RectTransform>().rect;
@@ -258,8 +262,9 @@ public class InterfaceController:MonoBehaviour
 			if (gloves.ContainsKey(swapID)) 
 			{
 				gloves[swapID].GetComponent<HandController>().handedness = swapHand;
+				gloves[swapID].transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load("logo" + swapBlock.transform.parent.name[0], typeof(Texture));
 				int pair = (int)Char.GetNumericValue(swapBlock.transform.parent.name[1]);
-				gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * 1.3f;
+				gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * gloveSeparation;
 			}
 		}
 		//slot pairblock into parent (empty space)
@@ -272,8 +277,9 @@ public class InterfaceController:MonoBehaviour
 		if (gloves.ContainsKey(pairID)) 
 		{
 			gloves[pairID].GetComponent<HandController>().handedness = pairHand;
+			gloves[pairID].transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load("logo" + pairBlock.transform.parent.name[0], typeof(Texture));
 			int pair = (int)Char.GetNumericValue(pairBlock.transform.parent.name[1]);
-			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * 1.3f;
+			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}
 	}
 	

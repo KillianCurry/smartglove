@@ -21,7 +21,7 @@ public class HandController:MonoBehaviour
 	private List<float> rotationMinimum;
 	private List<float> rotationMaximum;
 	//list of each joint
-	private List<GameObject> joints;
+	private List<Transform> joints;
 	
 	//TODO roll this calibration into the API
 	private Quaternion zeroRotation;
@@ -59,6 +59,7 @@ public class HandController:MonoBehaviour
 	
 	public bool GloveConnect()
 	{
+		if (connected) return true;
 		connected = openConnection(ID);
 		if (connected) StartCoroutine("GloveRead");
 		return connected;
@@ -66,6 +67,7 @@ public class HandController:MonoBehaviour
 	
 	public bool GloveDisconnect()
 	{
+		if (!connected) return true;
 		connected = !closeConnection(ID);
 		if (!connected) StopCoroutine("GloveRead");
 		return !connected;
@@ -73,121 +75,67 @@ public class HandController:MonoBehaviour
 	
 	public void GloveClear()
 	{
+		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
 		clearCalibration(ID);
 	}
 	
 	void Start()
 	{
-		//finger proportions
-		fingerLengths = new List<float>();
+		joints = new List<Transform>();
+		fingerRotations = new List<double>();
 		rotationMinimum = new List<float>();
 		rotationMaximum = new List<float>();
-		//thumb
-		fingerLengths.Add(palmWidth/2f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(90f);
-		
-		fingerLengths.Add(palmWidth/2f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(90f);
-		
-		fingerLengths.Add(palmWidth/4f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(90f);
-		
-		//index
-		fingerLengths.Add(0.5f);
-		rotationMinimum.Add(-10f);
-		rotationMaximum.Add(75f);
-		
-		fingerLengths.Add(0.3f);
-		rotationMinimum.Add(-15f);
-		rotationMaximum.Add(110f);
-		
-		fingerLengths.Add(0.2f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(80f);
-		
-		//middle
-		fingerLengths.Add(0.6f);
-		rotationMinimum.Add(-10f);
-		rotationMaximum.Add(75f);
-		
-		fingerLengths.Add(0.35f);
-		rotationMinimum.Add(-15f);
-		rotationMaximum.Add(110f);
-		
-		fingerLengths.Add(0.2f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(80f);
-		
-		//ring
-		fingerLengths.Add(0.5f);
-		rotationMinimum.Add(-10f);
-		rotationMaximum.Add(75f);
-		
-		fingerLengths.Add(0.3f);
-		rotationMinimum.Add(-15f);
-		rotationMaximum.Add(110f);
-		
-		fingerLengths.Add(0.2f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(80f);
-		
-		//index
-		fingerLengths.Add(0.35f);
-		rotationMinimum.Add(-10f);
-		rotationMaximum.Add(75f);
-		
-		fingerLengths.Add(0.2f);
-		rotationMinimum.Add(-15f);
-		rotationMaximum.Add(110f);
-		
-		fingerLengths.Add(0.15f);
-		rotationMinimum.Add(0f);
-		rotationMaximum.Add(80f);
-		
-		GenerateHand();
+		//set rotation limits
+		rotationMinimum = new List<float>()
+		{
+			0f,0f,0f,	 //thumb
+			-10f,-15f,0f,//index
+			-10f,-15f,0f,//middle
+			-10f,-15f,0f,//ring
+			-10f,-15f,0f //pinky
+		};
+		rotationMaximum = new List<float>()
+		{
+			90f,90f,90f, //thumb
+			75f,110f,80f,//index
+			75f,110f,80f,//middle
+			75f,110f,80f,//ring
+			75f,110f,80f,//pinky
+		};
+		//instantiate the hand prefab and transfer its contents to this
+		GameObject gloveObject = (GameObject)Instantiate(Resources.Load("glove", typeof(GameObject)));
+		gloveObject.transform.GetChild(0).SetParent(transform, false);
+		gloveObject.transform.GetChild(0).SetParent(transform, false);
+		//mark all the joints for easier reference later
+		for (int i = 0; i < 5; i++)
+		{
+			joints.Add(transform.GetChild(0).GetChild(0).GetChild(i));
+			fingerRotations.Add(0d);
+			joints.Add(transform.GetChild(0).GetChild(0).GetChild(i).GetChild(0));
+			fingerRotations.Add(0d);
+			joints.Add(transform.GetChild(0).GetChild(0).GetChild(i).GetChild(0).GetChild(0));
+			fingerRotations.Add(0d);
+		}
+		//destroy the now empty prefab
+		Destroy(gloveObject);
 	}
 	
 	void Update()
 	{
 		transform.localScale = new Vector3(handedness, 1, 1);
 		//update joint angles and palm orientation to match input
-		if (connected)
-		{
-			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, (float)fingerRotations[0]);
-			for (int r = 1; r < fingerRotations.Count; r++)
-			{
-				float spread = 0f;
-				if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
-				joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], spread, 0f);
-			}
-			this.transform.localRotation = Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
-		}
 		//otherwise let the user control the hand via interface
-		else
+		fingerCurl = Mathf.Sin(Time.time)*0.5f + 0.5f;
+		if (!connected) fingerRotations[0] = rotationMinimum[0] + (fingerCurl * rotationMaximum[0]);
+		joints[0].localRotation = Quaternion.Euler(joints[0].localRotation.eulerAngles.x, -(float)fingerRotations[0], joints[0].localRotation.eulerAngles.z);
+		for (int r = 1; r < fingerRotations.Count; r++)
 		{
-			fingerRotations[0] = fingerCurl*90f;
-			joints[0].transform.localRotation = Quaternion.Euler(joints[0].transform.localRotation.eulerAngles.x, joints[0].transform.localRotation.eulerAngles.y, (float)fingerRotations[0]);
-			for (int r = 1; r < fingerRotations.Count; r++)
-			{
-				fingerRotations[r] = fingerCurl*90f;
-				float spread = 0f;
-				if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
-				joints[r].transform.localRotation = Quaternion.Euler((float)fingerRotations[r], spread, 0f);
-			}
+			if (!connected) fingerRotations[r] = rotationMinimum[r] + (fingerCurl * rotationMaximum[r]);
+			float spread = 0f;
+			if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
+			joints[r].localRotation = Quaternion.Euler((float)fingerRotations[r], 0f, spread);
 		}
-	}
-	
-	void OnDrawGizmos()
-	{
-		if (!Application.isPlaying) return;
-		Gizmos.color = Color.black;
-		foreach (GameObject e in joints)
-		{
-			Gizmos.DrawSphere(e.transform.position, 0.02f);
-		}
+		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 	}
 	
 	//coroutine to read data from arduino into fingerRotations, avoiding lag from waiting to read serial
@@ -242,93 +190,8 @@ public class HandController:MonoBehaviour
 		}
 	}
 	
-	void GenerateHand()
-	{
-		//TODO final pass of hand generation for tidiness
-		fingerRotations = new List<double>();
-		
-		//create the palm geometry, a cube
-		GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		//name the geometry for easy identification
-		obj.name = "palm";
-		//scale to match specifications
-		obj.transform.localScale = new Vector3(palmWidth, palmHeight, palmLength+0.05f);
-		obj.transform.localPosition = new Vector3(0f, 0f, obj.transform.localScale.z/2f);
-		//child to the heirarchy root
-		obj.transform.SetParent(this.transform, false);
-		//delete the box collider unity generates
-		Destroy(obj.GetComponent<BoxCollider>());
-		
-		//previous joint transform to use as the parent of the next joint in a finger
-		Transform prev;
-		
-		joints = new List<GameObject>();
-		
-		//generate first thumb joint
-		fingerRotations.Add(0d);
-		GameObject empty = new GameObject("joint0_0");
-		empty.transform.localPosition = new Vector3(-palmWidth/4f, palmHeight/2f, 0f);
-		empty.transform.localRotation = Quaternion.Euler(0f, -20f, 45f);
-		empty.transform.SetParent(this.transform, false);
-		joints.Add(empty);
-		prev = empty.transform;
-		
-		obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		obj.name = "finger0_0";
-		obj.transform.localScale = new Vector3(palmWidth/2f, palmHeight, fingerLengths[0]);
-		obj.transform.localPosition = new Vector3(-palmWidth/4f, -palmHeight/2f, fingerLengths[0]/2f);
-		obj.transform.SetParent(empty.transform, false);
-		Destroy(obj.GetComponent<BoxCollider>());
-		
-		//generate rest of thumb
-		prev = AddJoint(prev, new Vector3(-3f*palmWidth/8f, 0f, fingerLengths[0]), 0, 1);
-		prev = AddSegment(0, 1, prev);
-		AddSegment(0, 2, prev);
-		
-		//generate fingers
-		for (int i = 1; i < 5; i++)
-		{
-			prev = AddJoint(this.transform, new Vector3((((float)(i-1) * (palmWidth/4f)) - ((palmWidth / 2f) - (palmWidth / 8f))), 0f, palmLength), i, 0);
-			for (int j = 0; j < 3; j++)
-			{
-				prev = AddSegment(i, j, prev);
-			}
-		}
-	}
-	
-	Transform AddJoint(Transform parent, Vector3 position, int finger, int joint)
-	{
-		fingerRotations.Add((joint+1)*3);
-		GameObject empty = new GameObject("joint" + finger.ToString() + "_" + joint.ToString());
-		empty.transform.SetParent(parent, false);
-		if (joint == 0) position += Vector3.up*palmHeight/2f;
-		empty.transform.localPosition = position;
-		float spread = 0f;
-		if (joint == 0) spread = ((finger-2)*5f);
-		empty.transform.localRotation = Quaternion.Euler((float)fingerRotations.Last(), spread, 0f);
-		joints.Add(empty);
-		return empty.transform;
-	}
-	
-	Transform AddSegment(int finger, int joint, Transform previous)
-	{
-		//create string suffix for naming convention
-		float length = fingerLengths[finger*3+joint];
-		
-		GameObject geometry = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		geometry.name = "finger" + finger.ToString() + "_" + joint.ToString();
-		geometry.transform.localScale = new Vector3(palmWidth/4f, palmHeight, length);
-		geometry.transform.SetParent(previous, false);
-		geometry.transform.localPosition = new Vector3(0f, -palmHeight/2f, length/2f);
-		Destroy(geometry.GetComponent<BoxCollider>());
-		
-		if (joint == 2) return null;
-		
-		return AddJoint(previous, new Vector3(0f, 0f, length), finger, joint+1);
-	}
-	
 	void OnApplicationQuit()
 	{
-		GloveDisconnect();
+		if (connected) GloveDisconnect();
 	}
 }
