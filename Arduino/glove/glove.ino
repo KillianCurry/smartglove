@@ -270,7 +270,7 @@ void loop() {
         RawDataIMU[5], RawDataIMU[6], RawDataIMU[7], RawDataIMU[8], RawDataIMU[9],
         RawDataIMU[10], RawDataIMU[11]
       };
-      //imuChar.setValue(imuCharArray, 13); //notify central with new data
+      imuChar.setValue(imuCharArray, 13); //notify central with new data
       
       //update the stretch sensor characteristic
       const unsigned char capaCharArray[21] = {
