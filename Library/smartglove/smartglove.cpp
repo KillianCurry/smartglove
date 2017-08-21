@@ -280,8 +280,8 @@ extern "C" {
 		//convert them with bitwise math
 		for (int i = 0; i < 10; i++)
 		{
-			int val = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
-			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+			int val = ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1] * 256;
+			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 2];
 
 			(*splitInts)[i] = val;
 		}
@@ -293,21 +293,26 @@ extern "C" {
 		CloseHandle(gloves[gloveID].pHandle);
 	}
 
+	SMARTGLOVE_API void addUUID(char* buffer, int* bufferSize)
+	{
+		std::string UUID = "";
+		for (int i = 0; i < *bufferSize; i++)
+		{
+			UUID += *(buffer + i);
+		}
+		Glove newGlove(UUID, gloves.size());
+		gloves.push_back(newGlove);
+	}
+
 	SMARTGLOVE_API char* findGloves()
 	{
 		//TODO actually find paired smartgloves and their UUIDs
-		Glove glove0("{00601001-7374-7265-7563-6873656e7365}", 0);
-		gloves.push_back(glove0);
-		Glove glove1("{00602001-7374-7265-7563-6873656e7365}", 1);
-		gloves.push_back(glove1);
-		std::string str = "\0";
+		std::string str = "";
 		for each (Glove g in gloves)
 		{
 			str += g.UUIDstr + " ";
 		}
-		std::vector<char> charStr(str.begin(), str.end());
-		charStr.push_back('\0');
-		return &charStr[0];
+		return &str[0];
 	}
 
 	//TODO consider just calling a main update loop that calls getData()
@@ -317,9 +322,9 @@ extern "C" {
 		//TODO return a 2D array
 		//allocate enough memory for all the stretch channels + xyz orientation
 		std::vector<double> values(CHANNELS + 3, 0);
-		values[0] = ((double)gloves[gloveID].imuRaw[0] / (double)100);
-		values[1] = ((double)gloves[gloveID].imuRaw[1] / (double)100);
-		values[2] = ((double)gloves[gloveID].imuRaw[2] / (double)100);
+		values[0] = ((double)gloves[gloveID].imuRaw[0]);
+		values[1] = ((double)gloves[gloveID].imuRaw[1]);
+		values[2] = ((double)gloves[gloveID].imuRaw[2]);
 		for (int i = 0; i < CHANNELS; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value

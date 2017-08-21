@@ -90,7 +90,7 @@ int   FILTER_MODE     =      FILTER_32PT;
 int   RESOLUTION_MODE =      RESOLUTION_100fF;
 
 #define NOTIFICATION_FREQUENCY 12
-#define SENSOR_FREQUENCY 50
+#define SENSOR_FREQUENCY 80
 
 //SPI Configuration
 SPISettings SPI_settings(2000000, MSBFIRST, SPI_MODE1);
@@ -113,8 +113,6 @@ float roll, pitch, heading;
 void setup() {
   Serial.begin(9600);
 
-  Serial.println("a");
-
   // Initialise the BLE ////////////////////////////////////////
   blePeripheral.setLocalName("StretchSense"); //broadcast device name
   blePeripheral.setDeviceName("StretchSense");
@@ -131,7 +129,6 @@ void setup() {
   blePeripheral.setEventHandler(BLEDisconnected, BLECentralDisconnect);
 
   blePeripheral.begin();
-  Serial.println("b");
 
   //Serial.println("Bluetooth device active, waiting for connections...");
 
@@ -170,8 +167,6 @@ void setup() {
 
   // give the circuit time to set up:
   delay(0.1);
-  
-  Serial.println("c");
 }
 
 /////////////////////////////////////////////////////////////
@@ -188,8 +183,7 @@ void loop() {
     float accel_x, accel_y, accel_z;
     int accel_x_int, accel_y_int, accel_z_int;
 
-    Serial.println("agh");
-    Serial.println(idChar.value()[0]);
+    Serial.print("keep alive\n");
 
     // check if it's time to read data and update the filter
     if ((millis() - lastSensor) >= sensorInterval) {
@@ -216,6 +210,7 @@ void loop() {
     heading = filter.getYaw();
     pitch = filter.getPitch();
     roll = filter.getRoll();
+
     
     /////////////////////////////////////////////////////////////
     // StretchSense Mode ////////////////////////////////////////
@@ -234,12 +229,18 @@ void loop() {
     accel_y = ay + 2;
     accel_z = az + 2;
     // shift the decimal place and cast into integer
-    heading_int = heading * 100;
-    pitch_int = (pitch+90) * 100;
-    roll_int = (roll+180) * 100;
-    accel_x_int = accel_x * 100;
-    accel_y_int = accel_y * 100;
-    accel_z_int = accel_z * 100;
+    heading_int = heading;
+    pitch_int = (pitch+90);
+    roll_int = (roll+180);
+    Serial.print(heading_int);
+    Serial.print(" ");
+    Serial.print(pitch_int);
+    Serial.print(" ");
+    Serial.print(roll_int);
+    Serial.println();
+    accel_x_int = accel_x;
+    accel_y_int = accel_y;
+    accel_z_int = accel_z;
     // encode IMU integers into an array of 2-byte shorts
     RawDataIMU[0] = heading_int / 256;
     RawDataIMU[1] = heading_int - ((heading_int / 256) << 8);
@@ -264,13 +265,13 @@ void loop() {
     if (central) { // if a central is connected to peripheral
       central.poll();
       //update the IMU characteristic
-      /*const unsigned char imuCharArray[13] = {
-        RawDataIMU[0], RawDataIMU[1], RawDataIMU[2], RawDataIMU[3], RawDataIMU[4],
+      const unsigned char imuCharArray[13] = {
+        idChar.value()[0], RawDataIMU[0], RawDataIMU[1], RawDataIMU[2], RawDataIMU[3], RawDataIMU[4],
         RawDataIMU[5], RawDataIMU[6], RawDataIMU[7], RawDataIMU[8], RawDataIMU[9],
         RawDataIMU[10], RawDataIMU[11]
       };
-      imuChar.setValue(imuCharArray, 13); //notify central with new data
-      */
+      //imuChar.setValue(imuCharArray, 13); //notify central with new data
+      
       //update the stretch sensor characteristic
       const unsigned char capaCharArray[21] = {
         idChar.value()[0], RawDataCapacitance[0], RawDataCapacitance[1], RawDataCapacitance[2], RawDataCapacitance[3], RawDataCapacitance[4],
@@ -362,7 +363,7 @@ void readCapacitance(int raw[]) {
       if (i == 0) num += raw[a*2+i]*256;
       else num += raw[a*2+i];
     }
-    if (true) 
+    if (false) 
     {
       Serial.print(num);
       Serial.print(" ");

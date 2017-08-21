@@ -56,6 +56,7 @@ extern "C" {
 		Closes the BLE connection.
 	*/
 	SMARTGLOVE_API void closeConnection(int gloveID);
+	SMARTGLOVE_API void addUUID(char* buffer, int* bufferSize);
 	/*
 		Finds all paired StretchSense gloves and generates
 		corresponding Glove objects for the gloves vector.

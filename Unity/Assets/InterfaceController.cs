@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -27,6 +28,8 @@ public class InterfaceController:MonoBehaviour
 	public static extern void freePointer(IntPtr ptr);
 	[DllImport("smartglove", EntryPoint="closeLibrary")]
 	public static extern void closeLibrary();
+	[DllImport("smartglove", EntryPoint="addUUID")]
+	public static extern void addUUID(StringBuilder buffer, ref int bufferSize);
 	
 	void Start()
 	{
@@ -42,7 +45,17 @@ public class InterfaceController:MonoBehaviour
 		glovePositions.Add(Vector3.zero);
 		glovePositions.Add(Vector3.up * 2f);
 		glovePositions.Add(Vector3.up * 4f);
-		gloveSeparation = 2.2f;
+		gloveSeparation = 2.6f;
+		
+		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
+		int bufferSize1 = UUID1.Length;
+		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
+		addUUID(buffer1, ref bufferSize1);
+		string UUID2 = "{00602001-7374-7265-7563-6873656e7365}";
+		int bufferSize2 = UUID2.Length;
+		StringBuilder buffer2 = new StringBuilder(UUID2, bufferSize2);
+		addUUID(buffer2, ref bufferSize2);
+		
 		Populate();
 	}
 	
@@ -80,10 +93,9 @@ public class InterfaceController:MonoBehaviour
 	void Populate()
 	{
 		//retrieve the UUID list from the library
-		//IntPtr ptr = findGloves();
-		//string source = Marshal.PtrToStringAnsi(ptr);
+		IntPtr ptr = findGloves();
+		string source = Marshal.PtrToStringAnsi(ptr);
 		//freePointer(ptr);
-		string source = "00601001-7374-7265-7563-6873656e7365 00602001-7374-7265-7563-6873656e7365 00603001-7374-7265-7563-6873656e7365 00604001-7374-7265-7563-6873656e7365 00605001-7374-7265-7563-6873656e7365";
 		//iterate through UUIDs, using space as a delimiter
 		string[] delimiters = {" "};
 		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
@@ -262,7 +274,7 @@ public class InterfaceController:MonoBehaviour
 			if (gloves.ContainsKey(swapID)) 
 			{
 				gloves[swapID].GetComponent<HandController>().handedness = swapHand;
-				gloves[swapID].transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load("logo" + swapBlock.transform.parent.name[0], typeof(Texture));
+				gloves[swapID].GetComponent<HandController>().UpdateTexture();
 				int pair = (int)Char.GetNumericValue(swapBlock.transform.parent.name[1]);
 				gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * gloveSeparation;
 			}
@@ -277,7 +289,7 @@ public class InterfaceController:MonoBehaviour
 		if (gloves.ContainsKey(pairID)) 
 		{
 			gloves[pairID].GetComponent<HandController>().handedness = pairHand;
-			gloves[pairID].transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load("logo" + pairBlock.transform.parent.name[0], typeof(Texture));
+			gloves[pairID].GetComponent<HandController>().UpdateTexture();
 			int pair = (int)Char.GetNumericValue(pairBlock.transform.parent.name[1]);
 			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}

@@ -8,15 +8,7 @@ using UnityEngine;
 
 
 public class HandController:MonoBehaviour
-{	
-	//the height of the hand
-	public float palmHeight = 0.25f;
-	//the width of the hand, excluding the thumb
-	public float palmWidth = 1f;
-	//the length of the palm from wrist to finger base
-	public float palmLength = 1f;
-	//list of each segment's length, for proportions
-	private List<float> fingerLengths;
+{
 	//list of finger rotation ranges
 	private List<float> rotationMinimum;
 	private List<float> rotationMaximum;
@@ -35,9 +27,8 @@ public class HandController:MonoBehaviour
 	//list of each joint's rotation
 	private List<double> fingerRotations;
 	//vector of the x, y, and z rotation
-	private Vector3 palmOrientation;
-	[Range(-0.1f, 1.1f)]
-	public float fingerCurl;
+	public Vector3 palmOrientation;
+	private float fingerCurl;
 	
 	//is the BLE connected?
 	[HideInInspector]
@@ -62,6 +53,7 @@ public class HandController:MonoBehaviour
 		if (connected) return true;
 		connected = openConnection(ID);
 		if (connected) StartCoroutine("GloveRead");
+		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
 		return connected;
 	}
 	
@@ -118,11 +110,12 @@ public class HandController:MonoBehaviour
 		}
 		//destroy the now empty prefab
 		Destroy(gloveObject);
+		UpdateTexture();
 	}
 	
 	void Update()
 	{
-		transform.localScale = new Vector3(handedness, 1, 1);
+		transform.localScale = new Vector3(-handedness, 1, 1);
 		//update joint angles and palm orientation to match input
 		//otherwise let the user control the hand via interface
 		fingerCurl = Mathf.Sin(Time.time)*0.5f + 0.5f;
@@ -136,6 +129,14 @@ public class HandController:MonoBehaviour
 			joints[r].localRotation = Quaternion.Euler((float)fingerRotations[r], 0f, spread);
 		}
 		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
+	}
+	
+	public void UpdateTexture()
+	{
+		string texName = "logo";
+		if (handedness == -1) texName += "R";
+		else texName += "L";
+		transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load(texName, typeof(Texture));
 	}
 	
 	//coroutine to read data from arduino into fingerRotations, avoiding lag from waiting to read serial
@@ -156,7 +157,7 @@ public class HandController:MonoBehaviour
 			Debug.Log(dat);
 			
 			//copy the orientation data (y and z negated to remove mirroring)
-			palmOrientation = new Vector3((float)data[0],(float)data[1],(float)data[2]);
+			palmOrientation = new Vector3((float)data[0],(float)data[2],(float)data[1]);
 			
 			//TODO more robust matching of sensors to finger representation
 			//loop through the calibrated finger rotation data
