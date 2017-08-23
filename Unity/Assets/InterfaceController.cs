@@ -18,9 +18,12 @@ public class InterfaceController:MonoBehaviour
 	private List<GameObject> rightPairSlots;
 	private List<Vector3> glovePositions;
 	private float gloveSeparation;
-	private int highlightedGlove;
 	private Vector3 dragStart;
 	private Transform originalParent;
+	
+	private Transform dragPanel;
+	private Transform connectPanel;
+	private Transform pairPanel;
 	
 	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr findGloves();
@@ -33,7 +36,10 @@ public class InterfaceController:MonoBehaviour
 	
 	void Start()
 	{
-		highlightedGlove = -1;
+		dragPanel = transform.GetChild(0);
+		connectPanel = transform.GetChild(1);
+		pairPanel = transform.GetChild(2);
+		
 		//initialize a list of panels to reference
 		glovePanels = new List<GameObject>();
 		//use a dictionary to refer to gloves
@@ -62,7 +68,7 @@ public class InterfaceController:MonoBehaviour
 	//add a new glove 
 	void AddPanel(int ID, string UUID)
 	{
-		GameObject panel = Instantiate(glovePrefab, transform.GetChild(0));
+		GameObject panel = Instantiate(glovePrefab, connectPanel);
 		panel.transform.localPosition += Vector3.up * (45f * glovePanels.Count);
 		panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + glovePanels.Count.ToString();
 		EventTrigger trigger = (EventTrigger)panel.AddComponent(typeof(EventTrigger));
@@ -81,13 +87,11 @@ public class InterfaceController:MonoBehaviour
 	void EnterPanel(int ID)
 	{
 		if (gloves.ContainsKey(ID)) Camera.main.GetComponent<HighlightEffect>().highlightObject = gloves[ID];
-		highlightedGlove = ID;
 	}
 	
 	void ExitPanel()
 	{
 		Camera.main.GetComponent<HighlightEffect>().highlightObject = null;
-		highlightedGlove = -1;
 	}
 	
 	void Populate()
@@ -106,6 +110,18 @@ public class InterfaceController:MonoBehaviour
 		}
 	}
 	
+	//update the orbit center to reflect changes in glove transforms
+	void UpdateOrbit()
+	{
+		Vector3 center = Vector3.zero;
+		foreach (GameObject g in gloves.Values)
+		{
+			center += g.transform.localPosition + g.transform.forward * 2.3f * g.transform.localScale.z;
+		}
+		center /= gloves.Count;
+		dragPanel.GetComponent<DragController>().target = center;
+	}
+	
 	void AddGlove(int ID)
 	{
 		//create a new hand object with the ID
@@ -116,15 +132,18 @@ public class InterfaceController:MonoBehaviour
 		gloves.Add(ID, newGlove);
 		
 		//change 'add' button to 'connect' button
-		transform.GetChild(0).GetChild(1+ID).GetChild(2).GetChild(0).GetComponent<Text>().text = "Connect";
-		transform.GetChild(0).GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.RemoveAllListeners();
-		transform.GetChild(0).GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.AddListener(delegate { ConnectGlove(ID); });
+		connectPanel.GetChild(1+ID).GetChild(2).GetChild(0).GetComponent<Text>().text = "Connect";
+		connectPanel.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.RemoveAllListeners();
+		connectPanel.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.AddListener(delegate { ConnectGlove(ID); });
 		
 		//add pairing block
 		AddPairBlock(ID);
 		
 		//highlight new glove
 		EnterPanel(ID);
+		
+		//update the orbit center
+		UpdateOrbit();
 	}
 	
 	void AddPairBlock(int ID)
@@ -170,7 +189,7 @@ public class InterfaceController:MonoBehaviour
 		trigger.triggers[0].callback.AddListener(delegate { pairBlock.transform.position = Input.mousePosition - dragStart; });
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[1].eventID = EventTriggerType.PointerDown;
-		trigger.triggers[1].callback.AddListener(delegate { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(transform.GetChild(1)); dragStart = Input.mousePosition - pairBlock.transform.position; });
+		trigger.triggers[1].callback.AddListener(delegate { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(pairPanel); dragStart = Input.mousePosition - pairBlock.transform.position; });
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[2].eventID = EventTriggerType.PointerUp;
 		trigger.triggers[2].callback.AddListener(delegate { DropPairBlock(pairBlock); });
@@ -198,7 +217,6 @@ public class InterfaceController:MonoBehaviour
 	GameObject AddPair()
 	{
 		int pair = leftPairSlots.Count;
-		transform.GetChild(1).GetComponent<RectTransform>().sizeDelta = new Vector2(80f, 30f * (pair+1));
 		GameObject leftSlot = CreatePairSlot();
 		RectTransform leftRect = leftSlot.GetComponent<RectTransform>();
 		leftSlot.name = "L" + pair.ToString();
@@ -223,7 +241,7 @@ public class InterfaceController:MonoBehaviour
 	GameObject CreatePairSlot()
 	{
 		GameObject pairSlot = new GameObject();
-		pairSlot.transform.SetParent(transform.GetChild(1), false);
+		pairSlot.transform.SetParent(pairPanel, false);
 		RectTransform pairSlotRect = (RectTransform)pairSlot.AddComponent(typeof(RectTransform));
 		pairSlotRect.sizeDelta = new Vector2(20f,20f);
 		pairSlot.AddComponent(typeof(CanvasRenderer));
@@ -293,6 +311,9 @@ public class InterfaceController:MonoBehaviour
 			int pair = (int)Char.GetNumericValue(pairBlock.transform.parent.name[1]);
 			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}
+		
+		//update the orbit center
+		UpdateOrbit();
 	}
 	
 	void ConnectGlove(int ID)
