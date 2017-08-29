@@ -118,6 +118,7 @@ GameObject:
   - component: {fileID: 292186910}
   - component: {fileID: 292186912}
   - component: {fileID: 292186911}
+  - component: {fileID: 292186913}
   m_Layer: 5
   m_Name: Connection Panel
   m_TagString: Untagged
@@ -177,6 +178,18 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 292186909}
+--- !u!114 &292186913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 292186909}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4007cb3c74b7c5d409185e3e65704f62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainInterface: {fileID: 0}
 --- !u!1 &343295803
 GameObject:
   m_ObjectHideFlags: 0
@@ -646,6 +659,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0ba013a4de898419ef58ea1ab946cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainInterface: {fileID: 0}
   target: {x: 0, y: 0, z: 0}
   sensitivity: 0.2
 --- !u!1 &1144658051
@@ -752,6 +766,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0ba013a4de898419ef58ea1ab946cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainInterface: {fileID: 0}
   target: {x: 0, y: 0, z: 0}
   sensitivity: 0.2
 --- !u!114 &1402478101
@@ -901,6 +916,7 @@ GameObject:
   - component: {fileID: 1918215505}
   - component: {fileID: 1918215507}
   - component: {fileID: 1918215506}
+  - component: {fileID: 1918215508}
   m_Layer: 5
   m_Name: Pairing Panel
   m_TagString: Untagged
@@ -959,3 +975,15 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1918215504}
+--- !u!114 &1918215508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1918215504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d4194522695832499ea62d93bd70c61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainInterface: {fileID: 0}

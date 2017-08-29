@@ -8,145 +8,39 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class InterfaceController:MonoBehaviour
+public class PairInterface:MonoBehaviour
 {
-	public GameObject glovePrefab;
+	[HideInInspector]
+	public MainInterface mainInterface;
 	
-	private List<GameObject> glovePanels;
-	private Dictionary<int,GameObject> gloves;
-	private List<GameObject> leftPairSlots;
-	private List<GameObject> rightPairSlots;
 	private List<Vector3> glovePositions;
 	private float gloveSeparation;
+	
 	private Vector3 dragStart;
 	private Transform originalParent;
 	
-	private Transform dragPanel;
-	private Transform connectPanel;
-	private Transform pairPanel;
-	
-	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
-	public static extern IntPtr findGloves();
-	[DllImport("smartglove", EntryPoint="freePointer")]
-	public static extern void freePointer(IntPtr ptr);
-	[DllImport("smartglove", EntryPoint="closeLibrary")]
-	public static extern void closeLibrary();
-	[DllImport("smartglove", EntryPoint="addUUID")]
-	public static extern void addUUID(StringBuilder buffer, ref int bufferSize);
-	
+	private List<GameObject> leftPairSlots;
+	private List<GameObject> rightPairSlots;
+
 	void Start()
 	{
-		dragPanel = transform.GetChild(0);
-		connectPanel = transform.GetChild(1);
-		pairPanel = transform.GetChild(2);
-		
-		//initialize a list of panels to reference
-		glovePanels = new List<GameObject>();
-		//use a dictionary to refer to gloves
-		gloves = new Dictionary<int,GameObject>();
-		//use two lists to match glove pairs
-		leftPairSlots = new List<GameObject>();
-		rightPairSlots = new List<GameObject>();
 		glovePositions = new List<Vector3>();
 		glovePositions.Add(Vector3.zero);
 		glovePositions.Add(Vector3.up * 2f);
 		glovePositions.Add(Vector3.up * 4f);
 		gloveSeparation = 2.6f;
 		
-		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
-		int bufferSize1 = UUID1.Length;
-		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
-		addUUID(buffer1, ref bufferSize1);
-		string UUID2 = "{00602001-7374-7265-7563-6873656e7365}";
-		int bufferSize2 = UUID2.Length;
-		StringBuilder buffer2 = new StringBuilder(UUID2, bufferSize2);
-		addUUID(buffer2, ref bufferSize2);
+		//use two lists to match glove pairs
+		leftPairSlots = new List<GameObject>();
+		rightPairSlots = new List<GameObject>();
+	}
+	
+	void Update()
+	{
 		
-		Populate();
 	}
 	
-	//add a new glove 
-	void AddPanel(int ID, string UUID)
-	{
-		GameObject panel = Instantiate(glovePrefab, connectPanel);
-		panel.transform.localPosition += Vector3.up * (45f * glovePanels.Count);
-		panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + glovePanels.Count.ToString();
-		EventTrigger trigger = (EventTrigger)panel.AddComponent(typeof(EventTrigger));
-		trigger.triggers.Add(new EventTrigger.Entry());
-		trigger.triggers[0].eventID = EventTriggerType.PointerEnter;
-		trigger.triggers[0].callback.AddListener(delegate { EnterPanel(ID); });
-		trigger.triggers.Add(new EventTrigger.Entry());
-		trigger.triggers[1].eventID = EventTriggerType.PointerExit;
-		trigger.triggers[1].callback.AddListener(delegate { ExitPanel(); });
-		panel.transform.GetChild(1).GetComponent<Text>().text = UUID;
-		panel.transform.GetChild(2).GetComponent<Button>().onClick.AddListener(delegate { AddGlove(ID); });
-		panel.transform.GetChild(3).GetComponent<Button>().onClick.AddListener(delegate { ClearGlove(ID); });
-		glovePanels.Add(panel);
-	}
-	
-	void EnterPanel(int ID)
-	{
-		if (gloves.ContainsKey(ID)) Camera.main.GetComponent<HighlightEffect>().highlightObject = gloves[ID];
-	}
-	
-	void ExitPanel()
-	{
-		Camera.main.GetComponent<HighlightEffect>().highlightObject = null;
-	}
-	
-	void Populate()
-	{
-		//retrieve the UUID list from the library
-		IntPtr ptr = findGloves();
-		string source = Marshal.PtrToStringAnsi(ptr);
-		//freePointer(ptr);
-		//iterate through UUIDs, using space as a delimiter
-		string[] delimiters = {" "};
-		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
-		//add panels corresponding to the library's internal glove objects
-		for (int i = 0; i < UUIDs.Length; i++)
-		{
-			AddPanel(i, UUIDs[i]);
-		}
-	}
-	
-	//update the orbit center to reflect changes in glove transforms
-	void UpdateOrbit()
-	{
-		Vector3 center = Vector3.zero;
-		foreach (GameObject g in gloves.Values)
-		{
-			center += g.transform.localPosition + g.transform.forward * 2.3f * g.transform.localScale.z;
-		}
-		center /= gloves.Count;
-		dragPanel.GetComponent<DragController>().target = center;
-	}
-	
-	void AddGlove(int ID)
-	{
-		//create a new hand object with the ID
-		GameObject newGlove = new GameObject();
-		newGlove.name = "Glove " + ID.ToString();
-		HandController gloveScript = (HandController)newGlove.AddComponent(typeof(HandController));
-		gloveScript.ID = ID;
-		gloves.Add(ID, newGlove);
-		
-		//change 'add' button to 'connect' button
-		connectPanel.GetChild(1+ID).GetChild(2).GetChild(0).GetComponent<Text>().text = "Connect";
-		connectPanel.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.RemoveAllListeners();
-		connectPanel.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.AddListener(delegate { ConnectGlove(ID); });
-		
-		//add pairing block
-		AddPairBlock(ID);
-		
-		//highlight new glove
-		EnterPanel(ID);
-		
-		//update the orbit center
-		UpdateOrbit();
-	}
-	
-	void AddPairBlock(int ID)
+	public void AddPairBlock(int ID)
 	{
 		GameObject pairSlot = FindSlot();
 		GameObject pairBlock = new GameObject();
@@ -175,11 +69,11 @@ public class InterfaceController:MonoBehaviour
 		if (pairHand == 1) pairBlock.GetComponent<Image>().color = Color.red;
 		else pairBlock.GetComponent<Image>().color = Color.blue;
 		int pairID = Int32.Parse(pairBlock.name);
-		if (gloves.ContainsKey(pairID)) 
+		if (mainInterface.gloves.ContainsKey(pairID)) 
 		{
-			gloves[pairID].GetComponent<HandController>().handedness = pairHand;
+			mainInterface.gloves[pairID].GetComponent<HandController>().handedness = pairHand;
 			int pair = (int)Char.GetNumericValue(pairSlot.name[1]);
-			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
+			mainInterface.gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}
 		
 		//make block draggable
@@ -189,7 +83,7 @@ public class InterfaceController:MonoBehaviour
 		trigger.triggers[0].callback.AddListener(delegate { pairBlock.transform.position = Input.mousePosition - dragStart; });
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[1].eventID = EventTriggerType.PointerDown;
-		trigger.triggers[1].callback.AddListener(delegate { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(pairPanel); dragStart = Input.mousePosition - pairBlock.transform.position; });
+		trigger.triggers[1].callback.AddListener(delegate { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(transform); dragStart = Input.mousePosition - pairBlock.transform.position; });
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[2].eventID = EventTriggerType.PointerUp;
 		trigger.triggers[2].callback.AddListener(delegate { DropPairBlock(pairBlock); });
@@ -198,7 +92,7 @@ public class InterfaceController:MonoBehaviour
 		FindSlot();
 	}
 	
-	GameObject FindSlot()
+	private GameObject FindSlot()
 	{
 		for (int i = 0; i < leftPairSlots.Count; i++)
 		{
@@ -214,7 +108,7 @@ public class InterfaceController:MonoBehaviour
 		return AddPair();
 	}
 	
-	GameObject AddPair()
+	private GameObject AddPair()
 	{
 		int pair = leftPairSlots.Count;
 		GameObject leftSlot = CreatePairSlot();
@@ -238,10 +132,10 @@ public class InterfaceController:MonoBehaviour
 		return leftSlot;
 	}
 	
-	GameObject CreatePairSlot()
+	private GameObject CreatePairSlot()
 	{
 		GameObject pairSlot = new GameObject();
-		pairSlot.transform.SetParent(pairPanel, false);
+		pairSlot.transform.SetParent(transform, false);
 		RectTransform pairSlotRect = (RectTransform)pairSlot.AddComponent(typeof(RectTransform));
 		pairSlotRect.sizeDelta = new Vector2(20f,20f);
 		pairSlot.AddComponent(typeof(CanvasRenderer));
@@ -250,7 +144,7 @@ public class InterfaceController:MonoBehaviour
 		return pairSlot;
 	}
 	
-	void DropPairBlock(GameObject pairBlock)
+	private void DropPairBlock(GameObject pairBlock)
 	{
 		//if we're above a viable slot, reassign pairblock to slot
 		Transform newParent = originalParent;
@@ -289,12 +183,12 @@ public class InterfaceController:MonoBehaviour
 			else swapBlock.GetComponent<Image>().color = Color.blue;
 			swapBlock.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
 			int swapID = Int32.Parse(swapBlock.name);
-			if (gloves.ContainsKey(swapID)) 
+			if (mainInterface.gloves.ContainsKey(swapID)) 
 			{
-				gloves[swapID].GetComponent<HandController>().handedness = swapHand;
-				gloves[swapID].GetComponent<HandController>().UpdateTexture();
+				mainInterface.gloves[swapID].GetComponent<HandController>().handedness = swapHand;
+				mainInterface.gloves[swapID].GetComponent<HandController>().UpdateTexture();
 				int pair = (int)Char.GetNumericValue(swapBlock.transform.parent.name[1]);
-				gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * gloveSeparation;
+				mainInterface.gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * gloveSeparation;
 			}
 		}
 		//slot pairblock into parent (empty space)
@@ -304,30 +198,15 @@ public class InterfaceController:MonoBehaviour
 		if (pairHand == 1) pairBlock.GetComponent<Image>().color = Color.red;
 		else pairBlock.GetComponent<Image>().color = Color.blue;
 		int pairID = Int32.Parse(pairBlock.name);
-		if (gloves.ContainsKey(pairID)) 
+		if (mainInterface.gloves.ContainsKey(pairID)) 
 		{
-			gloves[pairID].GetComponent<HandController>().handedness = pairHand;
-			gloves[pairID].GetComponent<HandController>().UpdateTexture();
+			mainInterface.gloves[pairID].GetComponent<HandController>().handedness = pairHand;
+			mainInterface.gloves[pairID].GetComponent<HandController>().UpdateTexture();
 			int pair = (int)Char.GetNumericValue(pairBlock.transform.parent.name[1]);
-			gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
+			mainInterface.gloves[pairID].transform.localPosition = glovePositions[pair] + pairHand * Vector3.right * gloveSeparation;
 		}
 		
 		//update the orbit center
-		UpdateOrbit();
-	}
-	
-	void ConnectGlove(int ID)
-	{
-		gloves[ID].GetComponent<HandController>().GloveConnect();
-	}
-	
-	void ClearGlove(int ID)
-	{
-		gloves[ID].GetComponent<HandController>().GloveClear();
-	}
-	
-	void OnApplicationQuit()
-	{
-		closeLibrary();
+		mainInterface.UpdateOrbit();
 	}
 }

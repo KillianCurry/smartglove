@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class DragController:MonoBehaviour
+public class DragInterface:MonoBehaviour
 {
+	[HideInInspector]
+	public MainInterface mainInterface;
 	private bool dragging = false;
 	private Vector3 lastPos = Vector3.zero;
+	[HideInInspector]
 	public Vector3 target = Vector3.zero;
 	public float sensitivity = 0.2f;
 
