@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class HighlightEffect:MonoBehaviour
 {
@@ -55,8 +53,8 @@ public class HighlightEffect:MonoBehaviour
 			//create a separate render texture to output the isolated highlighted object to
 			RenderTexture isolated = new RenderTexture(source.width, source.height, 0, RenderTextureFormat.R8);
 			isolated.Create();
-			
-			highlightCamera.targetTexture = isolated;
+
+            highlightCamera.targetTexture = isolated;
 			highlightCamera.RenderWithShader(unlitShader, "");
 			highlightCamera.targetTexture = null;
 			

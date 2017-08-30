@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
@@ -13,13 +7,10 @@ public class ConnectInterface:MonoBehaviour
 	[HideInInspector]
 	public MainInterface mainInterface;
 	
-	//a prefab to instantiate for the glove panel
-	public GameObject glovePrefab;
-	
 	public void AddPanel(int ID, string UUID)
 	{
 		//instantiate a new panel from the prefab
-		GameObject panel = Instantiate(glovePrefab, transform);
+		GameObject panel = Instantiate((GameObject)Resources.Load("prefabs/Glove Panel", typeof(GameObject)), transform);
 		//position the panel in the list (stack from bottom to top)
 		panel.transform.localPosition += Vector3.up * (45f * (transform.childCount - 2));
 		panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + ID.ToString();

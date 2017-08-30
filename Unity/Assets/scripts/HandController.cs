@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using System.Runtime.InteropServices;
-using System.Linq;
 using UnityEngine;
 
 
@@ -95,7 +93,7 @@ public class HandController:MonoBehaviour
 			75f,110f,80f,//pinky
 		};
 		//instantiate the hand prefab and transfer its contents to this
-		GameObject gloveObject = (GameObject)Instantiate(Resources.Load("glove", typeof(GameObject)));
+		GameObject gloveObject = (GameObject)Instantiate(Resources.Load("models/glove", typeof(GameObject)));
 		gloveObject.transform.GetChild(0).SetParent(transform, false);
 		gloveObject.transform.GetChild(0).SetParent(transform, false);
 		//mark all the joints for easier reference later
@@ -133,7 +131,7 @@ public class HandController:MonoBehaviour
 	
 	public void UpdateTexture()
 	{
-		string texName = "logo";
+		string texName = "textures/logo";
 		if (handedness == -1) texName += "R";
 		else texName += "L";
 		transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load(texName, typeof(Texture));
