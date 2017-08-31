@@ -33,8 +33,10 @@ public class MainInterface:MonoBehaviour
 	//add a new glove to the library based on a UUID string
 	[DllImport("smartglove", EntryPoint="addUUID")]
 	public static extern void addUUID(StringBuilder buffer, ref int bufferSize);
-	
-	void Start()
+    [DllImport("smartglove", EntryPoint = "getData", CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr readGlove(int gloveID);
+
+    private void Start()
 	{
 		//keep track of children interfaces
 		MainInterface thisScript = GetComponent<MainInterface>();
@@ -60,6 +62,56 @@ public class MainInterface:MonoBehaviour
 		//add corresponding connection panels for the library's gloves
 		Populate();
 	}
+
+    private void Update()
+    {
+        foreach (int ID in gloves.Keys)
+        {
+            HandController glove = gloves[ID].GetComponent<HandController>();
+            if (!glove.connected) continue;
+
+            //copy data from the DLL's unmanaged memory into a managed array
+            double[] data = new double[13];
+            IntPtr ptr = readGlove(ID);
+            Marshal.Copy(ptr, data, 0, 13);
+
+            string dat = "";
+            for (int i = 0; i < 13; i++)
+            {
+                dat += data[i].ToString() + " ";
+            }
+            Debug.Log(dat);
+
+            //copy the orientation data (y and z negated to remove mirroring)
+            glove.palmOrientation = new Vector3((float)data[0], (float)data[2], (float)data[1]);
+
+            //TODO more robust matching of sensors to finger representation
+            //loop through the calibrated finger rotation data
+            for (int i = 0; i < 15; i++)
+            {
+                //TODO move all of this into the library
+                //TODO make the array the library passes 15 values long, even if the last joint values are duplicates
+                //get the stretch data from the BLE (3 to 12)
+                double val = data[(i / 3) * 2 + 3];
+                if ((i % 3) != 0) val = data[(i / 3) * 2 + 4];
+                //clean out NaN values
+                if (double.IsNaN(val)) val = 0d;
+                //clamp just in case it exceeds extremes
+                if (val < 0d) val = 0d;
+                else if (val > 1d) val = 1d;
+                //if the glove is ten-sensor, just directly translate the value, splitting it between the two extreme joints
+                if (!glove.fiveSensor)
+                {
+                    glove.fingerRotations[i] = glove.rotationMinimum[i] + (val * glove.rotationMaximum[i]);
+                }
+                //otherwise, split even values among all joints of a finger
+                else
+                {
+                    //TODO five sensor
+                }
+            }
+        }
+    }
 	
 	private void Populate()
 	{
@@ -100,12 +152,7 @@ public class MainInterface:MonoBehaviour
 		HandController gloveScript = (HandController)newGlove.AddComponent(typeof(HandController));
 		gloveScript.ID = ID;
 		gloves.Add(ID, newGlove);
-		
-		//change 'add' button to 'connect' button
-		connectInterface.transform.GetChild(1+ID).GetChild(2).GetChild(0).GetComponent<Text>().text = "Connect";
-		connectInterface.transform.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.RemoveAllListeners();
-		connectInterface.transform.GetChild(1+ID).GetChild(2).GetComponent<Button>().onClick.AddListener(delegate { ConnectGlove(ID); });
-		
+
 		//add pairing block
 		pairInterface.AddPairBlock(ID);
 		
@@ -115,12 +162,31 @@ public class MainInterface:MonoBehaviour
 		//update the orbit center
 		UpdateOrbit();
 	}
+
+    public void RemoveGlove(int ID)
+    {
+        //remove highlight effect
+        Camera.main.GetComponent<HighlightEffect>().highlightObject = null;
+        //remove the glove from the dictionary and the scene
+        GameObject glove = gloves[ID];
+        glove.GetComponent<HandController>().GloveDisconnect();
+        gloves.Remove(ID);
+        GameObject.Destroy(glove);
+        //remove corresponding pairblock
+        pairInterface.RemovePairBlock(ID);
+    }
 	
 	//connect a given glove object
-	private void ConnectGlove(int ID)
+	public void ConnectGlove(int ID)
 	{
 		gloves[ID].GetComponent<HandController>().GloveConnect();
 	}
+
+    //disconnect a given glove object
+    public void DisconnectGlove(int ID)
+    {
+        gloves[ID].GetComponent<HandController>().GloveDisconnect();
+    }
 	
 	//clear a given glove object's calibration data
 	public void ClearGlove(int ID)

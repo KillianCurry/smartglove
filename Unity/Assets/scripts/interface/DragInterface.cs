@@ -20,11 +20,11 @@ public class DragInterface:MonoBehaviour
 		//when mouse clicks, set lastPos for first drag event
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[0].eventID = EventTriggerType.PointerDown;
-		trigger.triggers[0].callback.AddListener(delegate { lastPos = Input.mousePosition; });
+		trigger.triggers[0].callback.AddListener(state => lastPos = Input.mousePosition);
 		//when dragging, rotate the camera
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[1].eventID = EventTriggerType.Drag;
-		trigger.triggers[1].callback.AddListener(delegate { DragCamera(); });
+		trigger.triggers[1].callback.AddListener(state => DragCamera());
 	}
 	
 	void DragCamera()

@@ -2,13 +2,20 @@
 
 public class HighlightEffect:MonoBehaviour
 {
+    //the object to be highlighted
 	public GameObject highlightObject;
+    //the shader to use to emphasize the object
 	public Shader highlightShader;
 	
+    //the mask corresponding to the layer that is reserved for highlighting
 	private int highlightLayer;
+    //the camera to use to render the highlighted object for shader use
 	private Camera highlightCamera;
+    //the camera component of this object
 	private Camera thisCamera;
+    //an unlit shader to render the object as a solid color
 	private Shader unlitShader;
+    //a material to use for blitting
 	private Material highlightMaterial;
 
 	void Start()
@@ -17,18 +24,15 @@ public class HighlightEffect:MonoBehaviour
 		thisCamera = GetComponent<Camera>();
 		//add a new camera to render the highlighted object to before outlining it
 		highlightCamera = new GameObject().AddComponent<Camera>();
-		highlightCamera.CopyFrom(thisCamera);
+        //camera should look at exactly the same area as the main camera
+        highlightCamera.CopyFrom(thisCamera);
 		highlightCamera.enabled = false;
 		highlightCamera.name = "Highlight Camera";
 		highlightCamera.transform.SetParent(transform);
 		
+        //make a material to apply the highlight shader using blitting
 		unlitShader = Shader.Find("Unlit/Color");
 		highlightMaterial = new Material(highlightShader);
-	}
-	
-	void Update()
-	{
-		
 	}
 	
 	void OnRenderImage(RenderTexture source, RenderTexture destination)

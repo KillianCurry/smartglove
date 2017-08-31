@@ -8,8 +8,8 @@ using UnityEngine;
 public class HandController:MonoBehaviour
 {
 	//list of finger rotation ranges
-	private List<float> rotationMinimum;
-	private List<float> rotationMaximum;
+	public List<float> rotationMinimum;
+    public List<float> rotationMaximum;
 	//list of each joint
 	private List<Transform> joints;
 	
@@ -21,9 +21,9 @@ public class HandController:MonoBehaviour
 	[HideInInspector]
 	//-1 is left-handed, 1 is right-handed
 	public int handedness = 1;
-	
-	//list of each joint's rotation
-	private List<double> fingerRotations;
+
+    //list of each joint's rotation
+    public List<double> fingerRotations;
 	//vector of the x, y, and z rotation
 	public Vector3 palmOrientation;
 	private float fingerCurl;
@@ -50,7 +50,7 @@ public class HandController:MonoBehaviour
 	{
 		if (connected) return true;
 		connected = openConnection(ID);
-		if (connected) StartCoroutine("GloveRead");
+		//if (connected) StartCoroutine("GloveRead");
 		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
 		return connected;
 	}
@@ -59,7 +59,7 @@ public class HandController:MonoBehaviour
 	{
 		if (!connected) return true;
 		connected = !closeConnection(ID);
-		if (!connected) StopCoroutine("GloveRead");
+		//if (!connected) StopCoroutine("GloveRead");
 		return !connected;
 	}
 	

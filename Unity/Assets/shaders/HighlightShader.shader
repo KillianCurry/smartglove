@@ -111,7 +111,7 @@
 					intensity += tex2D(_GrabTexture, i.uv.xy + float2(0, (y-depth/2)*_GrabTexture_TexelSize.y)).r/depth;
 				}
 				
-				float4 col = intensity*float4(1.0,0.0,1.0,1.0)*2 + (1-intensity)*tex2D(_SceneTex,float2(i.uvOriginal.x,i.uvOriginal.y));
+				float4 col = intensity*float4(0.0,0.680,0.934,1.0)*2 + (1-intensity)*tex2D(_SceneTex,float2(i.uvOriginal.x,i.uvOriginal.y));
 				return col;
 			}
 			

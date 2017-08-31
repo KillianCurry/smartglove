@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -72,20 +73,38 @@ public class PairInterface:MonoBehaviour
 		//on drag, make the pairblock follow the mouse
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[0].eventID = EventTriggerType.Drag;
-		trigger.triggers[0].callback.AddListener(delegate { pairBlock.transform.position = Input.mousePosition - dragStart; });
+		trigger.triggers[0].callback.AddListener(state => pairBlock.transform.position = Input.mousePosition - dragStart);
 		//on click, record original pairslot and free the pairblock to be dragged
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[1].eventID = EventTriggerType.PointerDown;
-		trigger.triggers[1].callback.AddListener(delegate { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(transform); dragStart = Input.mousePosition - pairBlock.transform.position; });
+		trigger.triggers[1].callback.AddListener(state => { originalParent = pairBlock.transform.parent; pairBlock.transform.SetParent(transform); dragStart = Input.mousePosition - pairBlock.transform.position; });
 		//on mouse release, drop the pairblock, into a new pairslot or back to its original pairslot
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[2].eventID = EventTriggerType.PointerUp;
-		trigger.triggers[2].callback.AddListener(delegate { DropPairBlock(pairBlock); });
+		trigger.triggers[2].callback.AddListener(state => DropPairBlock(pairBlock));
 		
 		//if all slots are filled, this will add a new empty pair
 		FindSlot();
 	}
 	
+    public void RemovePairBlock(int ID)
+    {
+        string name = ID.ToString();
+        for (int i = 0; i < leftPairSlots.Count; i++)
+        {
+            if (leftPairSlots[i].transform.childCount > 0 && leftPairSlots[i].transform.GetChild(0).gameObject.name == name)
+            {
+                GameObject.Destroy(leftPairSlots[i].transform.GetChild(0).gameObject);
+                return;
+            }
+            if (rightPairSlots[i].transform.childCount > 0 && rightPairSlots[i].transform.GetChild(0).gameObject.name == name)
+            {
+                GameObject.Destroy(rightPairSlots[i].transform.GetChild(0).gameObject);
+                return;
+            }
+        }
+    }
+
 	private GameObject FindSlot()
 	{
 		//loop through all the pairslots
