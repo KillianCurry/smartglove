@@ -32,10 +32,11 @@ public class DragInterface:MonoBehaviour
 		//calculate how much the mouse has moved since the last frame
 		Vector3 drag = (Input.mousePosition - lastPos)*sensitivity;
 		Transform cam = Camera.main.transform;
-		//TODO fix gimbal lock problem around y axis
-		//rotate around orbit center based on drag coordinates
-		cam.RotateAround(target, Vector3.up, drag.x);
-		cam.RotateAround(target, cam.right, -drag.y);
+        //rotate around orbit center based on drag coordinates
+        float yAngle = (cam.localPosition-target).y / (cam.localPosition - target).magnitude;
+        cam.RotateAround(target, Vector3.up, drag.x);
+        //don't allow vertical rotation to hit the top or bottom, to avoid locking
+        if (Mathf.Sign(yAngle) *drag.y > 0 || Mathf.Abs(yAngle) < 0.9f) cam.RotateAround(target, cam.right, -drag.y);
 		//face toward the orbit center
 		cam.LookAt(target);
 		lastPos = Input.mousePosition;

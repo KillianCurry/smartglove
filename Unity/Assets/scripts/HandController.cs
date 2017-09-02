@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class HandController:MonoBehaviour
 {
+    [Tooltip("Maximum degrees the finger can rotate per second.")]
+    public float rotationSpeed = 80f;
 	//list of finger rotation ranges
 	public List<float> rotationMinimum;
     public List<float> rotationMaximum;
@@ -42,9 +44,6 @@ public class HandController:MonoBehaviour
 	public static extern IntPtr readGlove(int gloveID);
 	[DllImport("smartglove", EntryPoint="clearCalibration")]
 	public static extern void clearCalibration(int gloveID);
-	
-	//TODO support for multiple tinyTILES
-	//TODO initialize plugin to remove lingering variables??
 	
 	public bool GloveConnect()
 	{
@@ -124,7 +123,7 @@ public class HandController:MonoBehaviour
 			if (!connected) fingerRotations[r] = rotationMinimum[r] + (fingerCurl * rotationMaximum[r]);
 			float spread = 0f;
 			if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
-			joints[r].localRotation = Quaternion.Euler((float)fingerRotations[r], 0f, spread);
+            joints[r].localRotation = Quaternion.RotateTowards(joints[r].localRotation, Quaternion.Euler((float)fingerRotations[r], 0f, spread), rotationSpeed * Time.deltaTime);
 		}
 		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 	}

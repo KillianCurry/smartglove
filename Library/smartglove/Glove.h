@@ -26,7 +26,9 @@ public:
 
 	//the processed sensor values
 	std::vector<int> stretchRaw;
+	USHORT stretchHandle;
 	std::vector<int> imuRaw;
+	USHORT imuHandle;
 	std::vector<double> stretch;
 
 	int ID;

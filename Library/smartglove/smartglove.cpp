@@ -165,7 +165,8 @@ extern "C" {
 #pragma endregion
 
 #pragma region Set Notifications
-		for (int ch = 0; ch < 2; ch++)
+		//TODO change this back when IMU is reintroduced
+		for (int ch = 0; ch < 1; ch++)
 		{
 			//retrieve descriptor buffer size
 			USHORT descCount;
@@ -214,8 +215,10 @@ extern "C" {
 				BLUETOOTH_GATT_FLAG_NONE);
 
 			if (hr != S_OK) printf("\nERROR: Could not set descriptor value.\n");
-			else printf("Setting notification for service handle %d\n", currDesc->AttributeHandle);
-			printf("handle: %d\n", charBuffer[ch].AttributeHandle);
+			else printf("Setting notification for service handle %d\n", charBuffer[ch].AttributeHandle);
+
+			if (ch == 0) gloves[gloveID].stretchHandle = charBuffer[ch].AttributeHandle;
+			else if (ch == 1) gloves[gloveID].imuHandle = charBuffer[ch].AttributeHandle;
 
 			BTH_LE_GATT_EVENT_TYPE eType = CharacteristicValueChangedEvent;
 			BLUETOOTH_GATT_VALUE_CHANGED_EVENT_REGISTRATION eParam;
@@ -229,34 +232,12 @@ extern "C" {
 				eType,
 				&eParam,
 				(PFNBLUETOOTH_GATT_EVENT_CALLBACK)notificationResponse,
-				NULL,
+				&gloves[gloveID].ID,
 				&eHandle,
 				BLUETOOTH_GATT_FLAG_NONE);
 
 			if (hr != S_OK) printf("\nERROR: could not register notification response.\n");
 		}
-
-		typedef union
-		{
-			BTH_LE_GATT_CHARACTERISTIC_VALUE newValue;
-			struct
-			{
-				ULONG DataSize;
-				UCHAR Data[1];
-			} myValue;
-		} rezolvare;
-
-		rezolvare newValue_base;
-		RtlZeroMemory(&newValue_base.newValue, sizeof(rezolvare));
-		newValue_base.newValue.DataSize = sizeof(UCHAR);
-		newValue_base.myValue.Data[0] = (UCHAR)gloveID;
-		//http://community.silabs.com/t5/Projects/Setting-BLE-characteristic-values-a-Thunderboard-Sense-practical/td-p/203691
-		hr = BluetoothGATTSetCharacteristicValue(
-			gloves[gloveID].pHandle,
-			&charBuffer[2],
-			&newValue_base.newValue,
-			NULL,
-			BLUETOOTH_GATT_FLAG_NONE);
 #pragma endregion
 		//TODO return false if an error is encountered
 		return true;
@@ -265,23 +246,21 @@ extern "C" {
 	SMARTGLOVE_API void CALLBACK notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 	{
 		PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
+		int gloveID = *(int*)Context;
 
-		//TODO fix to register handles on notification registration
-		int gloveID = ValueChangedEventParameters->CharacteristicValue->Data[0];
-
-		if (gloveID == 216) gloveID = 0;
 		//point to the vector we want to fill
 		std::vector<int>* splitInts;
 		//use characteristic handle to understand whether this is stretch or IMU data
-		if (ValueChangedEventParameters->ChangedAttributeHandle == 13) splitInts = &gloves[gloveID].stretchRaw;
-		else splitInts = &gloves[gloveID].imuRaw;
+		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].stretchHandle) splitInts = &gloves[gloveID].stretchRaw;
+		else if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].imuHandle) splitInts = &gloves[gloveID].imuRaw;
+		else return;
 
 		//the values are stored as 2-bit short integers
 		//convert them with bitwise math
 		for (int i = 0; i < 10; i++)
 		{
-			int val = ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1] * 256;
-			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 2];
+			int val = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
+			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
 
 			(*splitInts)[i] = val;
 		}

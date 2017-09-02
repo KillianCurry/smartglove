@@ -11,10 +11,10 @@ unsigned long sensorInterval, lastSensor;
 // BLE - Bluetooth Low Energy
 // The BLE interface allows wireless data communication.
 BLEPeripheral blePeripheral;
-BLEService stretchSenseService("00601001-7374-7265-7563-6873656e7365"); //give your custom service an ID
-BLECharacteristic stretchChar("00601002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 21); //give your custom characteristic an ID, properties, and length
-BLECharacteristic imuChar("00601003-7374-7265-7563-6873656e7365", BLERead | BLENotify, 13); //give your custom characteristic an ID, properties, and length
-BLECharacteristic idChar("00601004-7374-7265-7563-6873656e7365", BLERead | BLEWrite, 4);
+BLEService stretchSenseService("00602001-7374-7265-7563-6873656e7365"); //give your custom service an ID
+BLECharacteristic stretchChar("00602002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 21); //give your custom characteristic an ID, properties, and length
+BLECharacteristic imuChar("00602003-7374-7265-7563-6873656e7365", BLERead | BLENotify, 13); //give your custom characteristic an ID, properties, and length
+BLECharacteristic idChar("00602004-7374-7265-7563-6873656e7365", BLERead | BLEWrite, 4);
 
 // IMU - Inertial Motion Unit
 // The IMU tracks orientation using the Madgwick algorithm.
@@ -270,7 +270,7 @@ void loop() {
         RawDataIMU[5], RawDataIMU[6], RawDataIMU[7], RawDataIMU[8], RawDataIMU[9],
         RawDataIMU[10], RawDataIMU[11]
       };
-      imuChar.setValue(imuCharArray, 13); //notify central with new data
+      //imuChar.setValue(imuCharArray, 13); //notify central with new data
       
       //update the stretch sensor characteristic
       const unsigned char capaCharArray[21] = {
