@@ -28,7 +28,7 @@ Pose::Pose(string name, vector<double> &ArticulationMeans, vector<double> &Orien
 
 
 //For testing
-Pose::Pose(string name, vector<double> &ArticulationMeans, vector<int> &OrientationMeans)
+Pose::Pose(string name, vector<double> &ArticulationMeans, vector<unsigned short> &OrientationMeans)
 {
 	for (vector<double>::iterator it = ArticulationMeans.begin(); it != ArticulationMeans.end(); ++it)
 	{
@@ -36,14 +36,14 @@ Pose::Pose(string name, vector<double> &ArticulationMeans, vector<int> &Orientat
 		this->Articulation.push_back(temp);
 	}
 
-	for (vector<int>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
+	for (vector<unsigned short>::iterator it = OrientationMeans.begin(); it != OrientationMeans.end(); ++it)
 	{
-		TolValue<double> temp = *(new TolValue<double>((double)*it));
+		TolValue<unsigned short> temp = *(new TolValue<unsigned short>((unsigned short)*it));
 		this->Orientation.push_back(temp);
 	}
 }
 
-Pose::Pose(string name, vector<TolValue<double>> &Articulation, vector<TolValue<double>> &Orientation)
+Pose::Pose(string name, vector<TolValue<double>> &Articulation, vector<TolValue<unsigned short>> &Orientation)
 {
 	this->Articulation = Articulation;
 	this->Orientation = Orientation;

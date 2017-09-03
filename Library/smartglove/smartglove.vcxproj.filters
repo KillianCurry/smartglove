@@ -18,16 +18,7 @@
     <ClInclude Include="smartglove.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SerialPort.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Glove.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Pose.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TolValue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,16 +26,7 @@
     <ClCompile Include="smartglove.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SerialPort.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Glove.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Pose.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TolValue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

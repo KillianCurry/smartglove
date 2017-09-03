@@ -23,14 +23,14 @@
 #include <iostream>
 #include <fstream>
 #include "Glove.h"
-#include "Pose.h"
+//#include "Pose.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 	std::vector<Glove> gloves;
-	std::vector<Pose> poses;
+	//std::vector<Pose> poses;
 	/*
 		Converts a UUID string to a handle.
 

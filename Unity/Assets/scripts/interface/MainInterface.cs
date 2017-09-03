@@ -50,11 +50,11 @@ public class MainInterface:MonoBehaviour
 		gloves = new Dictionary<int,GameObject>();
 		
 		//add new gloves to the library
-		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
+		string UUID1 = "{00001001-7374-7265-7563-6873656e7365}";
 		int bufferSize1 = UUID1.Length;
 		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
 		addUUID(buffer1, ref bufferSize1);
-		string UUID2 = "{00602001-7374-7265-7563-6873656e7365}";
+		string UUID2 = "{00600501-7374-7265-7563-6873656e7365}";
 		int bufferSize2 = UUID2.Length;
 		StringBuilder buffer2 = new StringBuilder(UUID2, bufferSize2);
 		addUUID(buffer2, ref bufferSize2);

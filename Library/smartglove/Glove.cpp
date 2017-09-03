@@ -1,19 +1,12 @@
 #include "Glove.h"
 
-#define CHANNELS 10
-
 	Glove::Glove(std::string _UUIDstr, int _ID)
 	{
 		//set UUID and glove ID
 		UUIDstr = _UUIDstr;
 		ID = _ID;
 
-		minValues = std::vector<int>(10, INT_MAX);
-		maxValues = std::vector<int>(10, INT_MIN);
-
-		stretchRaw = std::vector<int>(10, 0);
-		imuRaw = std::vector<int>(10, 0);
-		stretch = std::vector<double>(10, 0);
+		parseUUID(UUIDstr);
 	}
 
 	Glove::~Glove()
@@ -26,13 +19,35 @@
 		stretchRaw.clear();
 		imuRaw.clear();
 	}
-	
+
+	void Glove::parseUUID(std::string _UUID)
+	{
+		//first three digits indicate IMU
+		//000 = no IMU, 006 = IMU
+		printf("%s\n", _UUID.substr(1, 3).c_str());
+		if (_UUID.substr(1, 3) == "006") hasIMU = true;
+		else hasIMU = false;
+		//initialize IMUraw even if no IMU exists, just in case
+		imuRaw = std::vector<unsigned short>(6, 0);
+		//next three digits indicate number of sensors
+		//005 = 5 sensors, 010 = 10 sensors
+		printf("%s\n", _UUID.substr(4, 3).c_str());
+		sensorCount = std::stoi(_UUID.substr(4, 3));
+		//initialize stretch sensor inputs accordingly
+		stretchRaw = std::vector<unsigned short>(sensorCount, 0);
+		minValues = std::vector<unsigned short>(sensorCount, USHRT_MAX);
+		maxValues = std::vector<unsigned short>(sensorCount, 0);
+		stretch = std::vector<double>(sensorCount, 0);
+		//next two digits are service number
+		//remaining UUID data is meaningless
+	}
+
 	void Glove::clearCalibration()
 	{
 		//set values that are guaranteed to be overwritten
-		for (int i = 0; i < CHANNELS; i++)
+		for (int i = 0; i < sensorCount; i++)
 		{
-			minValues[i] = INT_MAX;
-			maxValues[i] = INT_MIN;
+			minValues[i] = USHRT_MAX;
+			maxValues[i] = 0;
 		}
 	}

@@ -165,8 +165,10 @@ extern "C" {
 #pragma endregion
 
 #pragma region Set Notifications
-		//TODO change this back when IMU is reintroduced
-		for (int ch = 0; ch < 1; ch++)
+		//there will only be a second characteristic if the glove has an IMU
+		int chars = 1;
+		if (gloves[gloveID].hasIMU) chars = 2;
+		for (int ch = 0; ch < chars; ch++)
 		{
 			//retrieve descriptor buffer size
 			USHORT descCount;
@@ -246,23 +248,28 @@ extern "C" {
 	SMARTGLOVE_API void CALLBACK notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 	{
 		PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
-		int gloveID = *(int*)Context;
+		int ID = *(int*)Context;
 
-		//point to the vector we want to fill
-		std::vector<int>* splitInts;
-		//use characteristic handle to understand whether this is stretch or IMU data
-		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].stretchHandle) splitInts = &gloves[gloveID].stretchRaw;
-		else if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].imuHandle) splitInts = &gloves[gloveID].imuRaw;
-		else return;
-
-		//the values are stored as 2-bit short integers
+		//the values are stored as 2-byte short integers
 		//convert them with bitwise math
-		for (int i = 0; i < 10; i++)
+		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[ID].stretchHandle)
 		{
-			int val = ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256;
-			val += ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
-
-			(*splitInts)[i] = val;
+			//TODO move autocalibration to here
+			for (int i = 0; i < gloves[ID].sensorCount; i++)
+			{
+				gloves[ID].stretchRaw[i] =
+					ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256
+					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+			}
+		}
+		else if (gloves[ID].hasIMU && ValueChangedEventParameters->ChangedAttributeHandle == gloves[ID].imuHandle)
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				gloves[ID].imuRaw[i] =
+					ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256
+					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+			}
 		}
 	}
 
@@ -279,7 +286,7 @@ extern "C" {
 		{
 			UUID += *(buffer + i);
 		}
-		Glove newGlove(UUID, gloves.size());
+		Glove newGlove(UUID, (int)gloves.size());
 		gloves.push_back(newGlove);
 	}
 
@@ -301,10 +308,10 @@ extern "C" {
 		//TODO return a 2D array
 		//allocate enough memory for all the stretch channels + xyz orientation
 		std::vector<double> values(CHANNELS + 3, 0);
-		values[0] = ((double)gloves[gloveID].imuRaw[0]);
-		values[1] = ((double)gloves[gloveID].imuRaw[1]);
-		values[2] = ((double)gloves[gloveID].imuRaw[2]);
-		for (int i = 0; i < CHANNELS; i++)
+		values[0] = ((double)gloves[gloveID].imuRaw[0])/100.0;
+		values[1] = ((double)gloves[gloveID].imuRaw[1])/100.0;
+		values[2] = ((double)gloves[gloveID].imuRaw[2])/100.0;
+		for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 		{
 			//if this sensor has been calibrated, constrain the sensor value
 			//into a range of zero to one. otherwise send zero.
@@ -334,12 +341,7 @@ extern "C" {
 
 	SMARTGLOVE_API void clearCalibration(int gloveID)
 	{
-		//set values that are guaranteed to be overwritten
-		for (int i = 0; i < CHANNELS; i++)
-		{
-			gloves[gloveID].minValues[i] = INT_MAX;
-			gloves[gloveID].maxValues[i] = INT_MIN;
-		}
+		gloves[gloveID].clearCalibration();
 	}
 	
 	SMARTGLOVE_API void closeLibrary()
@@ -347,6 +349,7 @@ extern "C" {
 		gloves.clear();
 	}
 	
+	/*
 	SMARTGLOVE_API void capturePose(int gloveID, std::string poseName)
 	{
 		Pose *capture;
@@ -400,7 +403,7 @@ extern "C" {
 
 		return false;
 	}
-
+	*/
 #ifdef __cplusplus
 }
 #endif
