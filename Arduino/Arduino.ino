@@ -8,16 +8,16 @@
 File myFile;
 const int chipSelectPin_SD  =    5;
 
-// Declaration BLE 
+// Declaration BLE
 BLEPeripheral blePeripheral;
 
 //BLE services and characteristics
 //UUID SPECIFICATIONS
 //first three digits: IMU (000 = none, 006 = 6DoF)
 //second three digits: sensor count (010 = 10-sensor, 005 = 5-sensor)
-BLEService stretchSenseService("00600501-7374-7265-7563-6873656e7365");
-BLECharacteristic stretchSenseChar("00600502-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
-BLECharacteristic imuChar("00600550-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
+BLEService stretchSenseService("00601001-7374-7265-7563-6873656e7365");
+BLECharacteristic stretchSenseChar("00601002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
+BLECharacteristic imuChar("00601050-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
 
 int counter_LED = 0;
 
@@ -30,7 +30,7 @@ int RawDataIMU[20];
 
 // Declaration StretchSense
 const int InterruptPin   =    6;
-const int chipSelectPin_SSL  =    7;
+const int chipSelectPin_SSL  =    10;
 
 // ---- DEFINITIONS ----//
 
@@ -116,98 +116,98 @@ float previous_value_counter = 0;
 void setup() {
   Serial.begin(9600);
   //Serial.begin(115200);
-  
+
   // Initialise the BLE ////////////////////////////////////////
-  #ifdef ENABLE_BLE
-        microsPrevious_BLE = micros();
-        microsPerReading_BLE = 1000000 / FREQUENCY_BLE_NEW_SAMPLE; //12.5 Hz
+#ifdef ENABLE_BLE
+  microsPrevious_BLE = micros();
+  microsPerReading_BLE = 1000000 / FREQUENCY_BLE_NEW_SAMPLE; //12.5 Hz
 
-        blePeripheral.setLocalName("StretchSense_glove01"); //broadcast device name
-        blePeripheral.setDeviceName("StretchSense_glove01");
-      
-        blePeripheral.setAdvertisedServiceUuid(stretchSenseService.uuid());  // add the service UUID
-        blePeripheral.addAttribute(stretchSenseService);   // add your custom service
-           #ifdef ENABLE_SSL_SPI
-                  blePeripheral.addAttribute(stretchSenseChar); // add your custom characteristic
-           #endif
-           #ifdef ENABLE_IMU
-                    blePeripheral.addAttribute(imuChar); // add your custom characteristic
-           #endif
+  blePeripheral.setLocalName("StretchSense_glove01"); //broadcast device name
+  blePeripheral.setDeviceName("StretchSense_glove01");
 
-           blePeripheral.setEventHandler(BLEConnected, blePeripheralConnectHandler);
-          blePeripheral.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+  blePeripheral.setAdvertisedServiceUuid(stretchSenseService.uuid());  // add the service UUID
+  blePeripheral.addAttribute(stretchSenseService);   // add your custom service
+#ifdef ENABLE_SSL_SPI
+  blePeripheral.addAttribute(stretchSenseChar); // add your custom characteristic
+#endif
+#ifdef ENABLE_IMU
+  blePeripheral.addAttribute(imuChar); // add your custom characteristic
+#endif
 
-        
-        blePeripheral.begin();
+  blePeripheral.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  blePeripheral.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
 
-        
-        Serial.println("Bluetooth device active, waiting for connections...");   
-  #endif
-  
+
+  blePeripheral.begin();
+
+
+  Serial.println("Bluetooth device active, waiting for connections...");
+#endif
+
   //Initialise the IMU ////////////////////////////////////////
-  #ifdef ENABLE_IMU
-        // start the IMU and filter
-        CurieIMU.begin();
-        //CurieIMU.setGyroRate(25);
-        //CurieIMU.setAccelerometerRate(25);
-        filter.begin(25);
-      
-        // Set the accelerometer range to 2G
-        CurieIMU.setAccelerometerRange(2);
-        // Set the gyroscope range to 250 degrees/second
-        CurieIMU.setGyroRange(250);
-      
-        CurieIMU.autoCalibrateGyroOffset();
-        CurieIMU.autoCalibrateAccelerometerOffset(X_AXIS, 0);
-        CurieIMU.autoCalibrateAccelerometerOffset(Y_AXIS, 0);
-        CurieIMU.autoCalibrateAccelerometerOffset(Z_AXIS, 1);
-      
-        // give the circuit time to set up:
-        delay(0.1);
-  #endif
-  
+#ifdef ENABLE_IMU
+  // start the IMU and filter
+  CurieIMU.begin();
+  //CurieIMU.setGyroRate(25);
+  //CurieIMU.setAccelerometerRate(25);
+  filter.begin(25);
+
+  // Set the accelerometer range to 2G
+  CurieIMU.setAccelerometerRange(2);
+  // Set the gyroscope range to 250 degrees/second
+  CurieIMU.setGyroRange(250);
+
+  CurieIMU.autoCalibrateGyroOffset();
+  CurieIMU.autoCalibrateAccelerometerOffset(X_AXIS, 0);
+  CurieIMU.autoCalibrateAccelerometerOffset(Y_AXIS, 0);
+  CurieIMU.autoCalibrateAccelerometerOffset(Z_AXIS, 1);
+
+  // give the circuit time to set up:
+  delay(0.1);
+#endif
+
   // Initialise the SD card  ///////////////////////////////////
-  #ifdef ENABLE_SD
-      microsPrevious_SD = micros();
+#ifdef ENABLE_SD
+  microsPrevious_SD = micros();
 
-       microsPerReading_SD = 1000000 / FREQUENCY_SD_NEW_SAMPLE; //12.5 Hz
+  microsPerReading_SD = 1000000 / FREQUENCY_SD_NEW_SAMPLE; //12.5 Hz
 
-       pinMode(chipSelectPin_SD, OUTPUT);
+  pinMode(chipSelectPin_SD, OUTPUT);
 
-        digitalWrite(5, HIGH);
-        digitalWrite(6, HIGH);
-        digitalWrite(7, HIGH);
+  digitalWrite(5, HIGH);
+  digitalWrite(6, HIGH);
+  digitalWrite(7, HIGH);
 
-       
-      // if (!SD.begin(10)) {
-       if (!SD.begin(chipSelectPin_SD)) {
-          Serial.println("sd initialization failed!");
-          return;
-       }
-       Serial.println("sd initialization done.");
-       writeInitialiseSdCard();
-      // give the circuit time to set up
-      delay(0.1);
-  #endif
 
-// Initialise the SPI //////////////////////////////////////
-  #ifdef ENABLE_SSL_SPI
-        //Initialise SPI port
-        SPI.begin();
-        SPI.beginTransaction(SPI_settings);
+  // if (!SD.begin(10)) {
+  if (!SD.begin(chipSelectPin_SD)) {
+    Serial.println("sd initialization failed!");
+    return;
+  }
+  Serial.println("sd initialization done.");
+  writeInitialiseSdCard();
+  // give the circuit time to set up
+  delay(0.1);
+#endif
 
-        // Initalize the  data ready and chip select pins:
-        pinMode(InterruptPin, INPUT);
-        pinMode(chipSelectPin_SSL, OUTPUT);
-      
-        //Configure 16FGV1.0:
-        writeConfiguration();
-        //Get capacitance scaling factor
-        CapacitanceScalingFactor = getCapacitanceScalingFactor(RESOLUTION_MODE);
-      
-        // give the circuit time to set up:
-        delay(0.1);
-  #endif
+  // Initialise the SPI //////////////////////////////////////
+#ifdef ENABLE_SSL_SPI
+  //Initialise SPI port
+  SPI.begin();
+  SPI.beginTransaction(SPI_settings);
+
+  // Initalize the  data ready and chip select pins:
+  pinMode(InterruptPin, INPUT);
+  pinMode(chipSelectPin_SSL, OUTPUT);
+
+  //Configure 16FGV1.0:
+  writeConfiguration();
+  //Get capacitance scaling factor
+  CapacitanceScalingFactor = getCapacitanceScalingFactor(RESOLUTION_MODE);
+
+  // give the circuit time to set up:
+  delay(0.1);
+#endif
 
   digitalWrite(5, HIGH);
   digitalWrite(6, HIGH);
@@ -218,7 +218,7 @@ void setup() {
 /// loop
 /// <summary>The main loop of the Arduino program</summary>
 void loop() {
-   
+
   int aix, aiy, aiz;
   int gix, giy, giz;
   float ax, ay, az;
@@ -229,186 +229,186 @@ void loop() {
   int accel_x_int, accel_y_int, accel_z_int;
 
   unsigned long microsNow;
-    String str = "";
-    String str2 = "";
+  String str = "";
+  String str2 = "";
 
-     /////////////////////////////////////////////////////////////  
-     // IMU Mode /////////////////////////////////////////////////
-     /////////////////////////////////////////////////////////////  
-        #ifdef ENABLE_IMU
-            microsNow = micros();
-            if (microsNow - microsPrevious_BLE >= microsPerReading_BLE) {
-                // read raw data from CurieIMU
-                CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
-            
-                // convert from raw data to gravity and degrees/second units
-                ax = convertRawAcceleration(aix);
-                ay = convertRawAcceleration(aiy);
-                az = convertRawAcceleration(aiz);
-                gx = convertRawGyro(gix);
-                gy = convertRawGyro(giy);
-                gz = convertRawGyro(giz);
-            
-                // update the filter, which computes orientation
-                filter.updateIMU(gx, gy, gz, ax, ay, az);
-            
-                // get the heading, pitch and roll
-                heading = filter.getYaw();
-                pitch = filter.getPitch();
-                roll = filter.getRoll();
-            
-                // shift the value to be positive
-                pitch = pitch + 90;
-                roll = roll + 180;
-                accel_x = ax + 2;
-                accel_y = ay + 2;
-                accel_z = az + 2;
-                
-                // shift the decimal place and cast into integer
-                heading_int = heading * 100;
-                pitch_int = pitch * 100;
-                roll_int = roll * 100;
-                accel_x_int = accel_x * 100;
-                accel_y_int = accel_y * 100;
-                accel_z_int = accel_z * 100;
-            
-                // separate each integer IMU into 2 headecimal values
-                RawDataIMU[0] = heading_int/256;
-                RawDataIMU[1] = heading_int-((heading_int/256)<<8);
-                RawDataIMU[2] = pitch_int/256;
-                RawDataIMU[3] = pitch_int-((pitch_int/256)<<8);
-                RawDataIMU[4] = roll_int/256;
-                RawDataIMU[5] = roll_int-((roll_int/256)<<8);
-                RawDataIMU[6] = accel_x_int/256;
-                RawDataIMU[7] = accel_x_int-((accel_x_int/256)<<8);    
-                RawDataIMU[8] = accel_y_int/256;
-                RawDataIMU[9] = accel_y_int-((accel_y_int/256)<<8);    
-                RawDataIMU[10] = accel_z_int/256;
-                RawDataIMU[11] = accel_z_int-((accel_z_int/256)<<8);
-                RawDataIMU[12] = 0;
-                RawDataIMU[13] = 0;
-                RawDataIMU[14] = 0;
-                RawDataIMU[15] = 0;
-                RawDataIMU[16] = 0;
-                RawDataIMU[17] = 0;
-                RawDataIMU[18] = 0;
-                RawDataIMU[19] = 0;
-            }
-        #endif
+  /////////////////////////////////////////////////////////////
+  // IMU Mode /////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
+#ifdef ENABLE_IMU
+  microsNow = micros();
+  if (microsNow - microsPrevious_BLE >= microsPerReading_BLE) {
+    // read raw data from CurieIMU
+    CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
 
-    /////////////////////////////////////////////////////////////  
-    // StretchSense Mode ////////////////////////////////////////  
-    /////////////////////////////////////////////////////////////  
-        #ifdef ENABLE_SSL_SPI
+    // convert from raw data to gravity and degrees/second units
+    ax = convertRawAcceleration(aix);
+    ay = convertRawAcceleration(aiy);
+    az = convertRawAcceleration(aiz);
+    gx = convertRawGyro(gix);
+    gy = convertRawGyro(giy);
+    gz = convertRawGyro(giz);
 
-            //Check if interrupt mode is enabled (in configuration)
-            if (INTERRUPT_MODE == INTERRUPT_ENABLED) {
-              // don't do anything until the interupt pin goes low:
-              while (digitalRead(InterruptPin) == HIGH);
-            }
-          
-            //Read the sensor Data
-               #ifdef ENABLE_SD
-                  SPI.beginTransaction(SPI_settings);
-               #endif
-            readCapacitance(RawDataCapacitance);
-        
-            //Wait for next data packet to start sampling
-            if (INTERRUPT_MODE == INTERRUPT_ENABLED) {
-              while (digitalRead(InterruptPin) == LOW);
-            }
-        #endif
-    
-    /////////////////////////////////////////////////////////////  
-    // SD Mode //////////////////////////////////////////////////  
-    /////////////////////////////////////////////////////////////  
-      #ifdef ENABLE_SD
-               // check if it's time to read data and update the filter
-              microsNow = micros();
-              if (microsNow - microsPrevious_SD >= microsPerReading_SD) {
-                
-                    // increment previous time, so we keep proper pace
-                     microsPrevious_SD = microsPrevious_SD + microsPerReading_SD;
-                    unsigned long time = millis();
-                    Serial.println("Record");
-                    writeInSdCard();
-              }
-      #endif
-      
-     /////////////////////////////////////////////////////////////  
-    // BLE Mode //////////////////////////////////////////////////  
-    /////////////////////////////////////////////////////////////  
-      #ifdef ENABLE_BLE
-         // check if it's time to read data and update the filter
-        microsNow = micros();
-        if (microsNow - microsPrevious_BLE >= microsPerReading_BLE) {
-              
-              // increment previous time, so we keep proper pace
-              microsPrevious_BLE = microsPrevious_BLE + microsPerReading_BLE;
-              
-              BLECentral central = blePeripheral.central();
-              
-              #ifdef ENABLE_IMU
-                if(central){ // if a central is connected to peripheral
-                   const unsigned char imuCharArray[20] = {
-                       RawDataIMU[0],RawDataIMU[1],RawDataIMU[2],RawDataIMU[3],RawDataIMU[4],
-                       RawDataIMU[5],RawDataIMU[6],RawDataIMU[7],RawDataIMU[8],RawDataIMU[9],
-                       RawDataIMU[10],RawDataIMU[11],RawDataIMU[12],RawDataIMU[13],RawDataIMU[14],
-                       RawDataIMU[15],RawDataIMU[16],RawDataIMU[17],RawDataIMU[18],RawDataIMU[19]
-                       };
-                   imuChar.setValue(imuCharArray, 20); //notify central with new data
-                }
-              #endif
-              #ifdef ENABLE_SSL_SPI
-                if(central){ // if a central is connected to peripheral
-                   const unsigned char capaCharArray[20] = {
-                       RawDataCapacitance[0],RawDataCapacitance[1],RawDataCapacitance[2],RawDataCapacitance[3],RawDataCapacitance[4],
-                       RawDataCapacitance[5],RawDataCapacitance[6],RawDataCapacitance[7],RawDataCapacitance[8],RawDataCapacitance[9],
-                       RawDataCapacitance[10],RawDataCapacitance[11],RawDataCapacitance[12],RawDataCapacitance[13],RawDataCapacitance[14],
-                       RawDataCapacitance[15],RawDataCapacitance[16],RawDataCapacitance[17],RawDataCapacitance[18],RawDataCapacitance[19]
-                       };
-                    stretchSenseChar.setValue(capaCharArray, 20); //notify central with new data
-                }
-              #endif
-        }
-    #endif
+    // update the filter, which computes orientation
+    filter.updateIMU(gx, gy, gz, ax, ay, az);
+
+    // get the heading, pitch and roll
+    heading = filter.getYaw();
+    pitch = filter.getPitch();
+    roll = filter.getRoll();
+
+    // shift the value to be positive
+    pitch = pitch + 90;
+    roll = roll + 180;
+    accel_x = ax + 2;
+    accel_y = ay + 2;
+    accel_z = az + 2;
+
+    // shift the decimal place and cast into integer
+    heading_int = heading * 100;
+    pitch_int = pitch * 100;
+    roll_int = roll * 100;
+    accel_x_int = accel_x * 100;
+    accel_y_int = accel_y * 100;
+    accel_z_int = accel_z * 100;
+
+    // separate each integer IMU into 2 headecimal values
+    RawDataIMU[0] = heading_int / 256;
+    RawDataIMU[1] = heading_int - ((heading_int / 256) << 8);
+    RawDataIMU[2] = pitch_int / 256;
+    RawDataIMU[3] = pitch_int - ((pitch_int / 256) << 8);
+    RawDataIMU[4] = roll_int / 256;
+    RawDataIMU[5] = roll_int - ((roll_int / 256) << 8);
+    RawDataIMU[6] = accel_x_int / 256;
+    RawDataIMU[7] = accel_x_int - ((accel_x_int / 256) << 8);
+    RawDataIMU[8] = accel_y_int / 256;
+    RawDataIMU[9] = accel_y_int - ((accel_y_int / 256) << 8);
+    RawDataIMU[10] = accel_z_int / 256;
+    RawDataIMU[11] = accel_z_int - ((accel_z_int / 256) << 8);
+    RawDataIMU[12] = 0;
+    RawDataIMU[13] = 0;
+    RawDataIMU[14] = 0;
+    RawDataIMU[15] = 0;
+    RawDataIMU[16] = 0;
+    RawDataIMU[17] = 0;
+    RawDataIMU[18] = 0;
+    RawDataIMU[19] = 0;
+  }
+#endif
+
+  /////////////////////////////////////////////////////////////
+  // StretchSense Mode ////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
+#ifdef ENABLE_SSL_SPI
+
+  //Check if interrupt mode is enabled (in configuration)
+  if (INTERRUPT_MODE == INTERRUPT_ENABLED) {
+    // don't do anything until the interupt pin goes low:
+    while (digitalRead(InterruptPin) == HIGH);
+  }
+
+  //Read the sensor Data
+#ifdef ENABLE_SD
+  SPI.beginTransaction(SPI_settings);
+#endif
+  readCapacitance(RawDataCapacitance);
+
+  //Wait for next data packet to start sampling
+  if (INTERRUPT_MODE == INTERRUPT_ENABLED) {
+    while (digitalRead(InterruptPin) == LOW);
+  }
+#endif
+
+  /////////////////////////////////////////////////////////////
+  // SD Mode //////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
+#ifdef ENABLE_SD
+  // check if it's time to read data and update the filter
+  microsNow = micros();
+  if (microsNow - microsPrevious_SD >= microsPerReading_SD) {
+
+    // increment previous time, so we keep proper pace
+    microsPrevious_SD = microsPrevious_SD + microsPerReading_SD;
+    unsigned long time = millis();
+    Serial.println("Record");
+    writeInSdCard();
+  }
+#endif
+
+  /////////////////////////////////////////////////////////////
+  // BLE Mode //////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
+#ifdef ENABLE_BLE
+  // check if it's time to read data and update the filter
+  microsNow = micros();
+  if (microsNow - microsPrevious_BLE >= microsPerReading_BLE) {
+
+    // increment previous time, so we keep proper pace
+    microsPrevious_BLE = microsPrevious_BLE + microsPerReading_BLE;
+
+    BLECentral central = blePeripheral.central();
+
+#ifdef ENABLE_IMU
+    if (central) { // if a central is connected to peripheral
+      const unsigned char imuCharArray[20] = {
+        RawDataIMU[0], RawDataIMU[1], RawDataIMU[2], RawDataIMU[3], RawDataIMU[4],
+        RawDataIMU[5], RawDataIMU[6], RawDataIMU[7], RawDataIMU[8], RawDataIMU[9],
+        RawDataIMU[10], RawDataIMU[11], RawDataIMU[12], RawDataIMU[13], RawDataIMU[14],
+        RawDataIMU[15], RawDataIMU[16], RawDataIMU[17], RawDataIMU[18], RawDataIMU[19]
+      };
+      imuChar.setValue(imuCharArray, 20); //notify central with new data
+    }
+#endif
+#ifdef ENABLE_SSL_SPI
+    if (central) { // if a central is connected to peripheral
+      const unsigned char capaCharArray[20] = {
+        RawDataCapacitance[0], RawDataCapacitance[1], RawDataCapacitance[2], RawDataCapacitance[3], RawDataCapacitance[4],
+        RawDataCapacitance[5], RawDataCapacitance[6], RawDataCapacitance[7], RawDataCapacitance[8], RawDataCapacitance[9],
+        RawDataCapacitance[10], RawDataCapacitance[11], RawDataCapacitance[12], RawDataCapacitance[13], RawDataCapacitance[14],
+        RawDataCapacitance[15], RawDataCapacitance[16], RawDataCapacitance[17], RawDataCapacitance[18], RawDataCapacitance[19]
+      };
+      stretchSenseChar.setValue(capaCharArray, 20); //notify central with new data
+    }
+#endif
+  }
+#endif
 
 
-    /////////////////////////////////////////////////////////////  
-    // Serial print /////////////////////////////////////////////  
-    /////////////////////////////////////////////////////////////  
-     #ifdef ENABLE_SERIAL_PRINT
-            #ifdef ENABLE_IMU
-                //Convert the raw data to IMU:
-                Serial.print(" Orientation: "); 
-                float imu_values = 0;
-                for (int i = 0; i < 10; i++) {
-                    imu_values = extractCapacitance(RawDataIMU, i)/100;
-                    Serial.print(imu_values);     //Output capacitance values
-                    Serial.print(", ");           //Output data as comma seperated values
-                }
-            #endif
+  /////////////////////////////////////////////////////////////
+  // Serial print /////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
+#ifdef ENABLE_SERIAL_PRINT
+#ifdef ENABLE_IMU
+  //Convert the raw data to IMU:
+  Serial.print(" Orientation: ");
+  float imu_values = 0;
+  for (int i = 0; i < 10; i++) {
+    imu_values = extractCapacitance(RawDataIMU, i) / 100;
+    Serial.print(imu_values);     //Output capacitance values
+    Serial.print(", ");           //Output data as comma seperated values
+  }
+#endif
 
-           #ifdef ENABLE_SSL_SPI
-              //Convert the raw data to capacitance:
-              Serial.print(" StretchSense: ");
-              float capacitance = 0;
-              for (int i = 0; i < 10; i++) {
-                  capacitance = 10*extractCapacitance(RawDataCapacitance, i);
-                  Serial.print(capacitance);  //Output capacitance values
-                  Serial.print(", ");          //Output data as comma seperated values
-              }
-           #endif
-           
-           Serial.print(", ");          //Output data as comma seperated values
-           Serial.print(", ");          //Output data as comma seperated values
-           Serial.print(", ");          //Output data as comma seperated values
-           unsigned long time = millis();
-           //Serial.print(time);
-             
-          //Separate for next values
-          Serial.print("\n");
-     #endif
+#ifdef ENABLE_SSL_SPI
+  //Convert the raw data to capacitance:
+  Serial.print(" StretchSense: ");
+  float capacitance = 0;
+  for (int i = 0; i < 10; i++) {
+    capacitance = 10 * extractCapacitance(RawDataCapacitance, i);
+    Serial.print(capacitance);  //Output capacitance values
+    Serial.print(", ");          //Output data as comma seperated values
+  }
+#endif
+
+  Serial.print(", ");          //Output data as comma seperated values
+  Serial.print(", ");          //Output data as comma seperated values
+  Serial.print(", ");          //Output data as comma seperated values
+  unsigned long time = millis();
+  //Serial.print(time);
+
+  //Separate for next values
+  Serial.print("\n");
+#endif
 
 }
 
@@ -420,7 +420,7 @@ float convertRawAcceleration(int aRaw) {
   // since we are using 2G range
   // -2g maps to a raw value of -32768
   // +2g maps to a raw value of 32767
-  
+
   float a = (aRaw * 2.0) / 32768.0;
   return a;
 }
@@ -433,7 +433,7 @@ float convertRawGyro(int gRaw) {
   // since we are using 250 degrees/seconds range
   // -250 maps to a raw value of -32768
   // +250 maps to a raw value of 32767
-  
+
   float g = (gRaw * 250.0) / 32768.0;
   return g;
 }
@@ -537,39 +537,39 @@ void writeInSdCard() {
   digitalWrite(chipSelectPin_SD, LOW);
 
   //Convert the raw data to capacitance:
-    float capacitance = 0;
-    float imu = 0;
-    unsigned long time = millis();
-    
-    myFile = SD.open(SD_FILE_NAME, FILE_WRITE);
-    if (myFile) {
+  float capacitance = 0;
+  float imu = 0;
+  unsigned long time = millis();
 
-        myFile.print(time);
-        myFile.print(", ");
-    
-        #ifdef ENABLE_SSL_SPI
-            for (int i = 0; i < 10; i++) {
-                capacitance = extractCapacitance(RawDataCapacitance, i);
-                myFile.print(capacitance);
-                myFile.print(", ");
-            }
-        #endif
-        #ifdef ENABLE_IMU
-          for (int i = 0; i < 10; i++) {
-              imu = extractCapacitance(RawDataIMU, i);
-              myFile.print(imu);
-              myFile.print(", ");
-          } 
-        #endif   
-        
-        myFile.print("\n");
-        myFile.close();
+  myFile = SD.open(SD_FILE_NAME, FILE_WRITE);
+  if (myFile) {
+
+    myFile.print(time);
+    myFile.print(", ");
+
+#ifdef ENABLE_SSL_SPI
+    for (int i = 0; i < 10; i++) {
+      capacitance = extractCapacitance(RawDataCapacitance, i);
+      myFile.print(capacitance);
+      myFile.print(", ");
     }
-    else {
+#endif
+#ifdef ENABLE_IMU
+    for (int i = 0; i < 10; i++) {
+      imu = extractCapacitance(RawDataIMU, i);
+      myFile.print(imu);
+      myFile.print(", ");
+    }
+#endif
+
+    myFile.print("\n");
+    myFile.close();
+  }
+  else {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
-    
+
   // take the chip select high to de-select:
   digitalWrite(chipSelectPin_SD, HIGH);
 }
@@ -577,36 +577,36 @@ void writeInSdCard() {
 /// writeInitialiseSdCard
 /// <summary>Sets up the SD card to be written to</summary>
 void writeInitialiseSdCard() {
-      digitalWrite(chipSelectPin_SD, LOW);
+  digitalWrite(chipSelectPin_SD, LOW);
 
-    myFile = SD.open(SD_FILE_NAME, FILE_WRITE);
-    if (myFile) {
-        myFile.print("time");
-        myFile.print(", ");
-        #ifdef ENABLE_SSL_SPI
-          for (int i = 0; i < 10; i++) {
-              myFile.print("SSL ");
-              myFile.print(i+1);
-              myFile.print(", ");
-          }
-        #endif
-        
-        #ifdef ENABLE_IMU
-           for (int i = 0; i < 10; i++) {
-                  myFile.print("IMU ");
-                  myFile.print(i+1);
-                  myFile.print(", ");
-           }    
-        #endif
-        myFile.print("\n");
-        
-        myFile.close();
+  myFile = SD.open(SD_FILE_NAME, FILE_WRITE);
+  if (myFile) {
+    myFile.print("time");
+    myFile.print(", ");
+#ifdef ENABLE_SSL_SPI
+    for (int i = 0; i < 10; i++) {
+      myFile.print("SSL ");
+      myFile.print(i + 1);
+      myFile.print(", ");
     }
-    else {
+#endif
+
+#ifdef ENABLE_IMU
+    for (int i = 0; i < 10; i++) {
+      myFile.print("IMU ");
+      myFile.print(i + 1);
+      myFile.print(", ");
+    }
+#endif
+    myFile.print("\n");
+
+    myFile.close();
+  }
+  else {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
-    digitalWrite(chipSelectPin_SD, HIGH);
+  digitalWrite(chipSelectPin_SD, HIGH);
 
 }
 
@@ -618,20 +618,20 @@ void blePeripheralConnectHandler(BLECentral& central) {
   Serial.print("\n");
   Serial.print("Connected event, central: ");
   Serial.println(central.address());
-/////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////
 
   //Initialise the IMU ////////////////////////////////////////
-  #ifdef ENABLE_IMU
+#ifdef ENABLE_IMU
 
-        CurieIMU.autoCalibrateGyroOffset();
-        CurieIMU.autoCalibrateAccelerometerOffset(X_AXIS, 0);
-        CurieIMU.autoCalibrateAccelerometerOffset(Y_AXIS, 0);
-        CurieIMU.autoCalibrateAccelerometerOffset(Z_AXIS, 1);
-      
-        // give the circuit time to set up:
-        delay(0.1);
-  #endif
- /////////////////////////////////////////////////////
+  CurieIMU.autoCalibrateGyroOffset();
+  CurieIMU.autoCalibrateAccelerometerOffset(X_AXIS, 0);
+  CurieIMU.autoCalibrateAccelerometerOffset(Y_AXIS, 0);
+  CurieIMU.autoCalibrateAccelerometerOffset(Z_AXIS, 1);
+
+  // give the circuit time to set up:
+  delay(0.1);
+#endif
+  /////////////////////////////////////////////////////
 }
 
 /// blePeripheralDisconnectHandler
@@ -639,7 +639,7 @@ void blePeripheralConnectHandler(BLECentral& central) {
 /// <param name="central">The central device that has been disconnected from</param>
 void blePeripheralDisconnectHandler(BLECentral& central) {
   // central disconnected event handler
-    Serial.print("\n");
+  Serial.print("\n");
 
   Serial.print("Disconnected event, central: ");
   Serial.println(central.address());

@@ -8,7 +8,7 @@ using UnityEngine;
 public class HandController:MonoBehaviour
 {
     [Tooltip("Maximum degrees the finger can rotate per second.")]
-    public float rotationSpeed = 80f;
+    public float rotationSpeed = 180f;
 	//list of finger rotation ranges
 	public List<float> rotationMinimum;
     public List<float> rotationMaximum;
@@ -49,7 +49,6 @@ public class HandController:MonoBehaviour
 	{
 		if (connected) return true;
 		connected = openConnection(ID);
-		//if (connected) StartCoroutine("GloveRead");
 		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
 		return connected;
 	}
@@ -134,58 +133,6 @@ public class HandController:MonoBehaviour
 		if (handedness == -1) texName += "R";
 		else texName += "L";
 		transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load(texName, typeof(Texture));
-	}
-	
-	//coroutine to read data from arduino into fingerRotations, avoiding lag from waiting to read serial
-	IEnumerator GloveRead()
-	{
-		while(true)
-		{
-			//copy data from the DLL's unmanaged memory into a managed array
-			double[] data = new double[13];
-			IntPtr ptr = readGlove(ID);
-			Marshal.Copy(ptr, data, 0, 13);
-			
-			string dat = "";
-			for (int i = 0; i < 13; i++)
-			{
-				dat += data[i].ToString() + " ";
-			}
-			Debug.Log(dat);
-			
-			//copy the orientation data (y and z negated to remove mirroring)
-			palmOrientation = new Vector3((float)data[0],(float)data[2],(float)data[1]);
-			
-			//TODO more robust matching of sensors to finger representation
-			//loop through the calibrated finger rotation data
-			for (int i = 0; i < 15; i++)
-			{
-				//TODO move all of this into the library
-				//TODO make the array the library passes 15 values long, even if the last joint values are duplicates
-				//get the stretch data from the BLE (3 to 12)
-				double val = data[(i/3)*2+3];
-				if ((i%3) != 0) val = data[(i/3)*2+4];
-				//clean out NaN values
-				if (double.IsNaN(val)) val = 0d;
-				//clamp just in case it exceeds extremes
-				if (val < 0d) val = 0d;
-				else if (val > 1d) val = 1d;
-				//if the glove is ten-sensor, just directly translate the value, splitting it between the two extreme joints
-				if (!fiveSensor)
-				{
-					fingerRotations[i] = rotationMinimum[i] + (val * rotationMaximum[i]);
-				}
-				//otherwise, split even values among all joints of a finger
-				else
-				{
-					//TODO five sensor
-				}
-			}
-			
-			//DEV return null means this will be called again next frame
-			//DEV return new WaitForSeconds(t) means this will wait t seconds before being called again
-			yield return null;//new WaitForSeconds(0.1f);
-		}
 	}
 	
 	void OnApplicationQuit()

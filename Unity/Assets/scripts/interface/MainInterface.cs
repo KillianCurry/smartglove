@@ -50,7 +50,7 @@ public class MainInterface:MonoBehaviour
 		gloves = new Dictionary<int,GameObject>();
 		
 		//add new gloves to the library
-		string UUID1 = "{00001001-7374-7265-7563-6873656e7365}";
+		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
 		int bufferSize1 = UUID1.Length;
 		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
 		addUUID(buffer1, ref bufferSize1);
@@ -71,44 +71,18 @@ public class MainInterface:MonoBehaviour
             if (!glove.connected) continue;
 
             //copy data from the DLL's unmanaged memory into a managed array
-            double[] data = new double[13];
+            double[] data = new double[18];
             IntPtr ptr = readGlove(ID);
-            Marshal.Copy(ptr, data, 0, 13);
-
-            string dat = "";
-            for (int i = 0; i < 13; i++)
-            {
-                dat += data[i].ToString() + " ";
-            }
-            Debug.Log(dat);
-
-            //copy the orientation data (y and z negated to remove mirroring)
+            Marshal.Copy(ptr, data, 0, 18);
+            
+            //copy orientation data
             glove.palmOrientation = new Vector3((float)data[0], (float)data[2], (float)data[1]);
 
-            //TODO more robust matching of sensors to finger representation
-            //loop through the calibrated finger rotation data
+            //read finger rotation values
             for (int i = 0; i < 15; i++)
             {
-                //TODO move all of this into the library
-                //TODO make the array the library passes 15 values long, even if the last joint values are duplicates
-                //get the stretch data from the BLE (3 to 12)
-                double val = data[(i / 3) * 2 + 3];
-                if ((i % 3) != 0) val = data[(i / 3) * 2 + 4];
-                //clean out NaN values
-                if (double.IsNaN(val)) val = 0d;
-                //clamp just in case it exceeds extremes
-                if (val < 0d) val = 0d;
-                else if (val > 1d) val = 1d;
-                //if the glove is ten-sensor, just directly translate the value, splitting it between the two extreme joints
-                if (!glove.fiveSensor)
-                {
-                    glove.fingerRotations[i] = glove.rotationMinimum[i] + (val * glove.rotationMaximum[i]);
-                }
-                //otherwise, split even values among all joints of a finger
-                else
-                {
-                    //TODO five sensor
-                }
+                //change 0-1 to degrees
+                glove.fingerRotations[i] = glove.rotationMinimum[i] + (data[i+3] * glove.rotationMaximum[i]);
             }
         }
     }

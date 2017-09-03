@@ -18,7 +18,6 @@ using std::endl;
 #ifdef __cplusplus
 extern "C" {
 #endif
-	//TODO redesign architecture to use shorts? (values from BLE are 2-byte)
 
 	SMARTGLOVE_API HANDLE getHandle(__in GUID pGUID)
 	{
@@ -75,7 +74,6 @@ extern "C" {
 
 	SMARTGLOVE_API bool establishConnection(int gloveID)
 	{
-		//TODO get GUID from function argument string
 		GUID pGUID;
 		std::wstring wideUUIDstr = std::wstring(gloves[gloveID].UUIDstr.begin(), gloves[gloveID].UUIDstr.end());
 		CLSIDFromString(wideUUIDstr.c_str(), &pGUID);
@@ -248,25 +246,37 @@ extern "C" {
 	SMARTGLOVE_API void CALLBACK notificationResponse(BTH_LE_GATT_EVENT_TYPE EventType, PVOID EventOutParameter, PVOID Context)
 	{
 		PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
-		int ID = *(int*)Context;
+		int gloveID = *(int*)Context;
 
 		//the values are stored as 2-byte short integers
 		//convert them with bitwise math
-		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[ID].stretchHandle)
+		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].stretchHandle)
 		{
 			//TODO move autocalibration to here
-			for (int i = 0; i < gloves[ID].sensorCount; i++)
+			for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 			{
-				gloves[ID].stretchRaw[i] =
+				gloves[gloveID].stretchRaw[i] =
 					ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256
 					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
+				//update autocalibration limits
+				if (gloves[gloveID].stretchRaw[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretchRaw[i];
+				if (gloves[gloveID].stretchRaw[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretchRaw[i];
+				//perform calibration
+				//set to 0 if raw data is NaN or calibration isn't satisfactory
+				if (gloves[gloveID].stretchRaw[i] != gloves[gloveID].stretchRaw[i] ||
+					gloves[gloveID].minValues[i] > gloves[gloveID].maxValues[i])
+					gloves[gloveID].stretch[i] = 0;
+				//otherwise, use autocalibration limits to set glove
+				else
+					gloves[gloveID].stretch[i] = (double)(gloves[gloveID].stretchRaw[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
+
 			}
 		}
-		else if (gloves[ID].hasIMU && ValueChangedEventParameters->ChangedAttributeHandle == gloves[ID].imuHandle)
+		else if (gloves[gloveID].hasIMU && ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].imuHandle)
 		{
 			for (int i = 0; i < 6; i++)
 			{
-				gloves[ID].imuRaw[i] =
+				gloves[gloveID].imuRaw[i] =
 					ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256
 					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
 			}
@@ -305,26 +315,37 @@ extern "C" {
 
 	SMARTGLOVE_API double* getData(int gloveID)
 	{
-		//TODO return a 2D array
-		//allocate enough memory for all the stretch channels + xyz orientation
-		std::vector<double> values(CHANNELS + 3, 0);
+		//allocate enough memory for xyz orientation + 15 finger joints
+		std::vector<double> values(18, 0);
+		//write orientation data
 		values[0] = ((double)gloves[gloveID].imuRaw[0])/100.0;
 		values[1] = ((double)gloves[gloveID].imuRaw[1])/100.0;
 		values[2] = ((double)gloves[gloveID].imuRaw[2])/100.0;
 		for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 		{
-			//if this sensor has been calibrated, constrain the sensor value
-			//into a range of zero to one. otherwise send zero.
-			//this is a NaN check, will only return true if the value is NaN
-			if (gloves[gloveID].stretchRaw[i] != gloves[gloveID].stretchRaw[i])
+			// 5 SENSOR MODEL
+			//   distributes curl evenly across three joints
+			if (gloves[gloveID].sensorCount == 5)
 			{
-				values[i + 3] = 0;
-				continue;
+				values[3 + i * 3] = 
+				values[3 + i * 3 + 1] = 
+				values[3 + i * 3 + 2] = gloves[gloveID].stretch[i];
 			}
-			if (gloves[gloveID].stretchRaw[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretchRaw[i];
-			if (gloves[gloveID].stretchRaw[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretchRaw[i];
-			gloves[gloveID].stretch[i] = (double)(gloves[gloveID].stretchRaw[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
-			values[i + 3] = gloves[gloveID].stretch[i];
+			//10 SENSOR MODEL
+			//   even i = base joint, odd i = next two joints
+			else if (gloves[gloveID].sensorCount == 10)
+			{
+				if ((i%2)==0) values[3 + (i/2) * 3] = gloves[gloveID].stretch[i];
+				else		  values[3 + (i/2) * 3 + 1] =
+							  values[3 + (i/2) * 3 + 2] = gloves[gloveID].stretch[i];
+			}
+			//15 SENSOR MODEL
+			//   sensors map directly to joints
+			else
+			{
+				//output calibrated stretch value to the glove
+				values[i + 3] = gloves[gloveID].stretch[i];
+			}
 		}
 
 		//TODO split returns of IMU and stretch sensors into two functions?
