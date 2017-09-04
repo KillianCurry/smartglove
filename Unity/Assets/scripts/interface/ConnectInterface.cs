@@ -7,6 +7,8 @@ public class ConnectInterface:MonoBehaviour
 {
 	[HideInInspector]
 	public MainInterface mainInterface;
+    //time it takes from the last notification for the indicator to fade away completely
+    public double fadeTime = 1f;
 	
 	public void AddPanel(int ID, string UUID)
 	{
@@ -65,14 +67,21 @@ public class ConnectInterface:MonoBehaviour
         {
             thisText.text = "Disconnect";
             mainInterface.ConnectGlove(ID);
+            transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(true);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = true;
         }
         else
         {
             thisText.text = "Connect";
             mainInterface.DisconnectGlove(ID);
+            transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(false);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = false;
         }
+    }
+
+    public void UpdateNotificationIndicator(int ID, double lastNotification)
+    {
+        transform.GetChild(ID+1).GetChild(5).gameObject.GetComponent<Image>().color = Color.Lerp(new Color(0.0f, 0.68f, 0.934f), new Color(0.0f, 0.68f, 0.934f, 0f), (float)(lastNotification / fadeTime));
     }
 	
 	private void EnterPanel(int ID)

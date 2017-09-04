@@ -12,9 +12,6 @@ using std::endl;
 #define SMARTGLOVE_API __declspec(dllimport)
 #endif
 
-#define UUID_TO_SEARCH "{00601001-7374-7265-7563-6873656e7365}"
-#define CHANNELS 10
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -252,7 +249,6 @@ extern "C" {
 		//convert them with bitwise math
 		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].stretchHandle)
 		{
-			//TODO move autocalibration to here
 			for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 			{
 				gloves[gloveID].stretchRaw[i] =
@@ -281,6 +277,8 @@ extern "C" {
 					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
 			}
 		}
+		//record the time at which this notification occurred
+		gloves[gloveID].lastNotification = std::chrono::high_resolution_clock::now();
 	}
 
 	SMARTGLOVE_API void closeConnection(int gloveID)
@@ -353,6 +351,11 @@ extern "C" {
 		//return a pointer to the vector
 		double* pntr = &values[0];
 		return pntr;
+	}
+
+	SMARTGLOVE_API double getLastNotification(int gloveID)
+	{
+		return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - gloves[gloveID].lastNotification).count();
 	}
 
 	SMARTGLOVE_API void freePointer(char* ptr)

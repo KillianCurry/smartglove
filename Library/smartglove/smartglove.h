@@ -73,6 +73,12 @@ extern "C" {
 	*/
 	SMARTGLOVE_API double* getData(int gloveID);
 	/*
+		Read time since last BLE notification.
+
+		@return The time in seconds since the last update.
+	*/
+	SMARTGLOVE_API double getLastNotification(int gloveID);
+	/*
 		Release the pointer passed to the DLL.
 
 		@param ptr The pointer to release.

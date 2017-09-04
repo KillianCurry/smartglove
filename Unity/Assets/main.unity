@@ -190,6 +190,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainInterface: {fileID: 0}
+  fadeTime: 1
 --- !u!1 &343295803
 GameObject:
   m_ObjectHideFlags: 0

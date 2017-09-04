@@ -15,9 +15,9 @@ BLEPeripheral blePeripheral;
 //UUID SPECIFICATIONS
 //first three digits: IMU (000 = none, 006 = 6DoF)
 //second three digits: sensor count (010 = 10-sensor, 005 = 5-sensor)
-BLEService stretchSenseService("00601001-7374-7265-7563-6873656e7365");
-BLECharacteristic stretchSenseChar("00601002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
-BLECharacteristic imuChar("00601050-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
+BLEService stretchSenseService("00001001-7374-7265-7563-6873656e7365");
+BLECharacteristic stretchSenseChar("00001002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
+BLECharacteristic imuChar("00001050-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
 
 int counter_LED = 0;
 
@@ -89,7 +89,7 @@ int   RESOLUTION_MODE           =       RESOLUTION_100fF;
 #define   FREQUENCY_BLE_NEW_SAMPLE      12.5
 #define   FREQUENCY_SD_NEW_SAMPLE       40
 //flags to include certain sections of code
-#define   ENABLE_IMU
+//#define   ENABLE_IMU
 #define   ENABLE_BLE
 //#define   ENABLE_SD
 #define   ENABLE_SSL_SPI

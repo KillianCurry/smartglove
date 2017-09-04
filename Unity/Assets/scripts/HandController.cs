@@ -112,9 +112,9 @@ public class HandController:MonoBehaviour
 	void Update()
 	{
 		transform.localScale = new Vector3(-handedness, 1, 1);
-		//update joint angles and palm orientation to match input
-		//otherwise let the user control the hand via interface
-		fingerCurl = Mathf.Sin(Time.time)*0.5f + 0.5f;
+        //update joint angles and palm orientation to match input
+        //otherwise curl the fingers (so it unfolds when connected)
+        fingerCurl = 1f;
 		if (!connected) fingerRotations[0] = rotationMinimum[0] + (fingerCurl * rotationMaximum[0]);
 		joints[0].localRotation = Quaternion.Euler(joints[0].localRotation.eulerAngles.x, -(float)fingerRotations[0], joints[0].localRotation.eulerAngles.z);
 		for (int r = 1; r < fingerRotations.Count; r++)

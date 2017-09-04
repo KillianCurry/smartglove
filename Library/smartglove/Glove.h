@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <chrono>
 #pragma comment(lib, "SetupAPI")
 #pragma comment(lib, "BluetoothApis.lib")
 
@@ -35,6 +36,9 @@ public:
 	USHORT imuHandle;
 	//raw IMU from the BLE (6 values: orientation xyz, acceleration xyz)
 	std::vector<unsigned short> imuRaw;
+
+	//The last time a BLE notification was received
+	std::chrono::high_resolution_clock::time_point lastNotification;
 
 	//INFORMATION ABOUT THE GLOVE HARDWARE
 	//whether the glove is equipped with an IMU

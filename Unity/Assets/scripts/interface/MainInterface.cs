@@ -35,6 +35,8 @@ public class MainInterface:MonoBehaviour
 	public static extern void addUUID(StringBuilder buffer, ref int bufferSize);
     [DllImport("smartglove", EntryPoint = "getData", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr readGlove(int gloveID);
+    [DllImport("smartglove", EntryPoint = "getLastNotification", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double getLastNotification(int gloveID);
 
     private void Start()
 	{
@@ -54,7 +56,7 @@ public class MainInterface:MonoBehaviour
 		int bufferSize1 = UUID1.Length;
 		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
 		addUUID(buffer1, ref bufferSize1);
-		string UUID2 = "{00600501-7374-7265-7563-6873656e7365}";
+		string UUID2 = "{00000501-7374-7265-7563-6873656e7365}";
 		int bufferSize2 = UUID2.Length;
 		StringBuilder buffer2 = new StringBuilder(UUID2, bufferSize2);
 		addUUID(buffer2, ref bufferSize2);
@@ -84,6 +86,8 @@ public class MainInterface:MonoBehaviour
                 //change 0-1 to degrees
                 glove.fingerRotations[i] = glove.rotationMinimum[i] + (data[i+3] * glove.rotationMaximum[i]);
             }
+
+            connectInterface.UpdateNotificationIndicator(ID, getLastNotification(ID));
         }
     }
 	
