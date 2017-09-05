@@ -373,17 +373,22 @@ extern "C" {
 		gloves.clear();
 	}
 	
-	/*
-	SMARTGLOVE_API void capturePose(int gloveID, std::string poseName)
+	SMARTGLOVE_API void capturePose(int gloveID, char* buffer, int* bufferSize)
 	{
-		Pose *capture;
-		capture = new Pose(poseName, gloves[gloveID].stretch, gloves[gloveID].imuRaw);
-		poses.push_back(*capture); //Add a check for poses with the same name?
+		std::string poseName("");
+
+		poseName = convertChar(buffer, bufferSize);
+
+		Pose capture(poseName, gloves[gloveID].stretch/*, gloves[gloveID].imuRaw*/);
+		poses.push_back(capture); //Add a check for poses with the same name?
 	}
 
-	SMARTGLOVE_API void writeOutPoses(std::string fileName)
+	SMARTGLOVE_API void writeOutPoses(char* buffer, int* bufferSize)
 	{
 		std::ofstream file;
+		std::string fileName("");
+
+		fileName = convertChar(buffer, bufferSize);
 		file.open(fileName);
 		
 		for (std::vector<Pose>::iterator it = poses.begin(); it != poses.end(); ++it)
@@ -399,10 +404,13 @@ extern "C" {
 
 	}
 
-	SMARTGLOVE_API bool checkPoseName(int gloveID, std::string poseName)
+	SMARTGLOVE_API bool checkPoseName(int gloveID, char* buffer, int* bufferSize)
 	{
 		Pose *pose = NULL;
 		Pose *curPose = NULL;
+		std::string poseName("");
+
+		poseName = convertChar(buffer, bufferSize);
 		
 		// Find the first pose in the list with a matching name.
 		for (std::vector<Pose>::iterator it = poses.begin(); it != poses.end(); ++it)
@@ -417,7 +425,7 @@ extern "C" {
 		if (pose == NULL) return false;
 
 		// Construct a pose from the current hand data.
-		curPose = new Pose(poseName, gloves[gloveID].stretch, gloves[gloveID].imuRaw);
+		curPose = new Pose(poseName, gloves[gloveID].stretch/*, gloves[gloveID].imuRaw*/);
 
 		// Check if the two poses are within tolerances.
 		if (*pose == *curPose)
@@ -427,8 +435,19 @@ extern "C" {
 
 		return false;
 	}
-	*/
+
+	std::string convertChar(char *buffer, int *bufferSize)
+	{
+		std::string out("");
+
+		for (int i = 0; i < *bufferSize; i++)
+		{
+			out += *(buffer + i);
+		}
+
+		return out;
+	}
+
 #ifdef __cplusplus
 }
 #endif
-

@@ -23,9 +23,9 @@ public:
 	string name;
 	
 	Pose(string name, string data);
-	Pose(string name, vector<double> &ArticulationMeans, vector<double> &OrientationMeans);
-	Pose(string name, vector<double> &ArticulationMeans, vector<unsigned short> &OrientationMeans);
-	Pose(string name, vector<TolValue<double>> &Articulation, vector<TolValue<unsigned short>> &Orientation);
+	Pose(string name, vector<double> &ArticulationMeans/*, vector<double> &OrientationMeans*/);
+	//Pose(string name, vector<double> &ArticulationMeans/*, vector<unsigned short> &OrientationMeans*/);
+	Pose(string name, vector<TolValue<double>> &Articulation/*, vector<TolValue<unsigned short>> &Orientation*/);
 	~Pose();
 
 	bool operator==(Pose& curPose);

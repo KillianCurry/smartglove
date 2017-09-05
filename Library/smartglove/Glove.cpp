@@ -1,51 +1,88 @@
 #include "Glove.h"
 
-	Glove::Glove(std::string _UUIDstr, int _ID)
-	{
-		//set UUID and glove ID
-		UUIDstr = _UUIDstr;
-		ID = _ID;
+Glove::Glove(std::string _UUIDstr, int _ID)
+{
+	//set UUID and glove ID
+	UUIDstr = _UUIDstr;
+	ID = _ID;
 
-		parseUUID(UUIDstr);
-	}
+	parseUUID(UUIDstr);
+}
 
-	Glove::~Glove()
-	{
-		//close the BLE connection
-		CloseHandle(pHandle);
-		//clear and free the vectors
-		minValues.clear();
-		maxValues.clear();
-		stretchRaw.clear();
-		imuRaw.clear();
-	}
+Glove::~Glove()
+{
+	//close the BLE connection
+	CloseHandle(pHandle);
+	//clear and free the vectors
+	minValues.clear();
+	maxValues.clear();
+	stretchRaw.clear();
+	imuRaw.clear();
+}
 
-	void Glove::parseUUID(std::string _UUID)
-	{
-		//first three digits indicate IMU
-		//000 = no IMU, 006 = IMU
-		if (_UUID.substr(1, 3) == "006") hasIMU = true;
-		else hasIMU = false;
-		//initialize IMUraw even if no IMU exists, just in case
-		imuRaw = std::vector<unsigned short>(6, 0);
-		//next three digits indicate number of sensors
-		//005 = 5 sensors, 010 = 10 sensors
-		sensorCount = std::stoi(_UUID.substr(4, 3));
-		//initialize stretch sensor inputs accordingly
-		stretchRaw = std::vector<unsigned short>(sensorCount, 0);
-		minValues = std::vector<unsigned short>(sensorCount, USHRT_MAX);
-		maxValues = std::vector<unsigned short>(sensorCount, 0);
-		stretch = std::vector<double>(sensorCount, 0);
-		//next two digits are service number
-		//remaining UUID data is meaningless
-	}
+void Glove::parseUUID(std::string _UUID)
+{
+	//first three digits indicate IMU
+	//000 = no IMU, 006 = IMU
+	if (_UUID.substr(1, 3) == "006") hasIMU = true;
+	else hasIMU = false;
+	//initialize IMUraw even if no IMU exists, just in case
+	imuRaw = std::vector<unsigned short>(6, 0);
+	//next three digits indicate number of sensors
+	//005 = 5 sensors, 010 = 10 sensors
+	sensorCount = std::stoi(_UUID.substr(4, 3));
+	//initialize stretch sensor inputs accordingly
+	stretchRaw = std::vector<unsigned short>(sensorCount, 0);
+	minValues = std::vector<unsigned short>(sensorCount, USHRT_MAX);
+	maxValues = std::vector<unsigned short>(sensorCount, 0);
+	stretch = std::vector<double>(sensorCount, 0);
+	//next two digits are service number
+	//remaining UUID data is meaningless
+}
 
-	void Glove::clearCalibration()
+void Glove::clearCalibration()
+{
+	//set values that are guaranteed to be overwritten
+	for (int i = 0; i < sensorCount; i++)
 	{
-		//set values that are guaranteed to be overwritten
-		for (int i = 0; i < sensorCount; i++)
-		{
-			minValues[i] = USHRT_MAX;
-			maxValues[i] = 0;
-		}
+		minValues[i] = USHRT_MAX;
+		maxValues[i] = 0;
 	}
+}
+
+//#define CHANNELS 10
+//
+//Glove::Glove(std::string _UUIDstr, int _ID)
+//{
+//	//set UUID and glove ID
+//	UUIDstr = _UUIDstr;
+//	ID = _ID;
+//
+//	minValues = std::vector<int>(10, INT_MAX);
+//	maxValues = std::vector<int>(10, INT_MIN);
+//
+//	stretchRaw = std::vector<int>(10, 0);
+//	imuRaw = std::vector<int>(10, 0);
+//	stretch = std::vector<double>(10, 0);
+//}
+//
+//Glove::~Glove()
+//{
+//	//close the BLE connection
+//	CloseHandle(pHandle);
+//	//clear and free the vectors
+//	minValues.clear();
+//	maxValues.clear();
+//	stretchRaw.clear();
+//	imuRaw.clear();
+//}
+//	
+//void Glove::clearCalibration()
+//{
+//	//set values that are guaranteed to be overwritten
+//	for (int i = 0; i < CHANNELS; i++)
+//	{
+//		minValues[i] = INT_MAX;
+//		maxValues[i] = INT_MIN;
+//	}
+//}

@@ -23,14 +23,14 @@
 #include <iostream>
 #include <fstream>
 #include "Glove.h"
-//#include "Pose.h"
+#include "Pose.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 	std::vector<Glove> gloves;
-	//std::vector<Pose> poses;
+	std::vector<Pose> poses;
 	/*
 		Converts a UUID string to a handle.
 
@@ -93,13 +93,15 @@ extern "C" {
 	*/
 	SMARTGLOVE_API void closeLibrary();
 
-	SMARTGLOVE_API void capturePose(int gloveID, std::string poseName);
+	SMARTGLOVE_API void capturePose(int gloveID, char* buffer, int* bufferSize);
 
-	SMARTGLOVE_API void writeOutPoses(std::string fileName);
+	SMARTGLOVE_API void writeOutPoses(char* buffer, int* bufferSize);
 
 	SMARTGLOVE_API void readInPoses(std::string fileName);
 
-	SMARTGLOVE_API bool checkPoseName(int gloveID, std::string poseName);
+	SMARTGLOVE_API bool checkPoseName(int gloveID, char* buffer, int* bufferSize);
+
+	std::string convertChar(char *buffer, int *bufferSize);
 #ifdef __cplusplus
 }
 #endif

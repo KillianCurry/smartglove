@@ -13,9 +13,11 @@ public class MainInterface:MonoBehaviour
 	//use a dictionary to match glove IDs to corresponding 3D objects
 	[HideInInspector]
 	public Dictionary<int,GameObject> gloves;
-	
-	//manages mouse-based camera control
-	private DragInterface dragInterface;
+
+    public bool testPoseMet;
+
+    //manages mouse-based camera control
+    private DragInterface dragInterface;
 	//manages glove connection panels
 	private ConnectInterface connectInterface;
 	//manages glove pairing blocks
@@ -37,6 +39,12 @@ public class MainInterface:MonoBehaviour
     public static extern IntPtr readGlove(int gloveID);
     [DllImport("smartglove", EntryPoint = "getLastNotification", CallingConvention = CallingConvention.Cdecl)]
     public static extern double getLastNotification(int gloveID);
+    [DllImport("smartglove", EntryPoint = "capturePose")]
+    public static extern void capturePose(ref int gloveID, StringBuilder poseName, ref int bufferSize);
+    [DllImport("smartglove", EntryPoint = "writeOutPoses")]
+    public static extern void writeOutPoses(StringBuilder fileName, ref int bufferSize);
+    [DllImport("smartglove", EntryPoint = "checkPoseName")]
+    public static extern bool checkPoseName(ref int gloveID, StringBuilder poseName, ref int bufferSize);
 
     private void Start()
 	{
@@ -67,6 +75,23 @@ public class MainInterface:MonoBehaviour
 
     private void Update()
     {
+        //int gloveNum = 0;
+        //string poseName = "test";
+        //string fileName = "C:\\Users\\Toto\\Desktop\\FYP\\poses.txt";
+        //int nameBufferSize = poseName.Length;
+        //int fileBufferSize = fileName.Length;
+        //if (Input.GetKeyDown(KeyCode.Space))
+        //{
+        //    capturePose(ref gloveNum, new StringBuilder(poseName, nameBufferSize), ref nameBufferSize);
+        //    writeOutPoses(new StringBuilder(fileName, fileBufferSize), ref fileBufferSize);
+        //}
+
+        //testPoseMet = checkPoseName(ref gloveNum, new StringBuilder(poseName, bufferSize), ref bufferSize);
+        //if (testPoseMet)
+        //{
+        //    Debug.Log(Time.time + "Pose Met");
+        //}
+
         foreach (int ID in gloves.Keys)
         {
             HandController glove = gloves[ID].GetComponent<HandController>();
