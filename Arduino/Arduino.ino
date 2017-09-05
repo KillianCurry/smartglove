@@ -4,31 +4,50 @@
 #include <SPI.h>
 #include <SD.h>
 
-// Declaration SD
+//HARDWARE SPECIFICATIONS
+#define   FREQUENCY_BLE_NEW_SAMPLE      12.5
+#define   FREQUENCY_SD_NEW_SAMPLE       40
+#define   CHANNELS                      5
+//flags to include certain sections of code
+//#define   ENABLE_IMU
+#define   ENABLE_BLE
+//#define   ENABLE_SD
+#define   ENABLE_SSL_SPI
+#define   ENABLE_SERIAL_PRINT
+
+// SD declarations
+#ifdef ENABLE_SD
+//timing
+unsigned long microsPrevious_SD, microsPerReading_SD;
 File myFile;
-const int chipSelectPin_SD  =    5;
+const int chipSelectPin_SD = 5;
+String SD_FILE_NAME = "ssl_all.csv";
+#endif
 
-// Declaration BLE
+// BLE declarations
+#ifdef ENABLE_BLE
+//timing
+unsigned long microsPrevious_BLE, microsPerReading_BLE;
 BLEPeripheral blePeripheral;
+//BLE service
+BLEService stretchSenseService;
+//BLE characteristics
+BLECharacteristic stretchSenseChar;
+BLECharacteristic imuChar;
+#endif
 
-//BLE services and characteristics
-//UUID SPECIFICATIONS
-//first three digits: IMU (000 = none, 006 = 6DoF)
-//second three digits: sensor count (010 = 10-sensor, 005 = 5-sensor)
-BLEService stretchSenseService("00001001-7374-7265-7563-6873656e7365");
-BLECharacteristic stretchSenseChar("00001002-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
-BLECharacteristic imuChar("00001050-7374-7265-7563-6873656e7365", BLERead | BLENotify, 20);
-
-int counter_LED = 0;
-
-// Declaration IMU
+// IMU declarations
+#ifdef ENABLE_IMU
+//timing
+unsigned long microsPrevious_IMU, microsPerReading_IMU;
+//madgwick
 Madgwick filter;
-unsigned long microsPrevious_BLE, microsPrevious_SD, microsPrevious_IMU;
-unsigned long microsPerReading_BLE, microsPerReading_SD, microsPerReading_IMU;
 float accelScale, gyroScale;
 int RawDataIMU[20];
+#endif
 
-// Declaration StretchSense
+// SSL_SPI declarations
+#ifdef ENABLE_SSL_SPI
 const int InterruptPin   =    6;
 const int chipSelectPin_SSL  =    10;
 
@@ -86,16 +105,6 @@ int   TRIGGER_MODE              =       TRIGGER_DISABLED;
 int   FILTER_MODE               =       FILTER_32PT;
 int   RESOLUTION_MODE           =       RESOLUTION_100fF;
 
-#define   FREQUENCY_BLE_NEW_SAMPLE      12.5
-#define   FREQUENCY_SD_NEW_SAMPLE       40
-//flags to include certain sections of code
-//#define   ENABLE_IMU
-#define   ENABLE_BLE
-//#define   ENABLE_SD
-#define   ENABLE_SSL_SPI
-#define   ENABLE_SERIAL_PRINT
-
-String    SD_FILE_NAME           =      "ssl_all.csv";
 //////////////////////////////////////////////////////////////////////
 
 
@@ -105,11 +114,7 @@ SPISettings SPI_settings(2000000, MSBFIRST, SPI_MODE1);
 //Default scaling factor
 int   CapacitanceScalingFactor = 100; //Default value
 int   RawDataCapacitance[20];
-
-float timestamp = 0;
-float counter = 0;
-float previous_value_counter = 0;
-
+#endif
 
 /// setup
 /// <summary>Initializes the Arduino program</summary>
@@ -124,6 +129,22 @@ void setup() {
 
   blePeripheral.setLocalName("StretchSense_glove01"); //broadcast device name
   blePeripheral.setDeviceName("StretchSense_glove01");
+
+  //UUID SPECIFICATIONS
+  //first three digits: IMU (000 = none, 006 = 6DoF)
+  //second three digits: sensor count (010 = 10-sensor, 005 = 5-sensor)
+  #ifdef ENABLE_IMU
+  String imuString = "006";
+  #else
+  String imuString = "000";
+  #endif
+  char* chanString;
+  sprintf(chanString, "%3d", CHANNELS);
+  Serial.println(imuString+chanString+"01"+"-7374-7265-7563-6873656e7365");
+  String UUIDservice = imuString+chanString+"01"+"-7374-7265-7563-6873656e7365";
+  stretchSenseService = BLEService(UUIDservice.c_str());
+  stretchSenseChar = BLECharacteristic((imuString+chanString+"02"+"-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, CHANNELS*2);
+  imuChar = BLECharacteristic((imuString+chanString+"50"+"-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, 20);
 
   blePeripheral.setAdvertisedServiceUuid(stretchSenseService.uuid());  // add the service UUID
   blePeripheral.addAttribute(stretchSenseService);   // add your custom service
@@ -527,6 +548,7 @@ float extractCapacitance(int raw[], int channel) {
 
 }
 
+#ifdef ENABLE_SD
 /// writeInSdCard
 /// <summary>Writes data to the connected SD card</summary>
 void writeInSdCard() {
@@ -609,6 +631,7 @@ void writeInitialiseSdCard() {
   digitalWrite(chipSelectPin_SD, HIGH);
 
 }
+#endif
 
 /// blePeripheralConnectHandler
 /// <summary>Called when central connects, resets IMU</summary>
