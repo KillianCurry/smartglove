@@ -36,7 +36,7 @@ public class HandController:MonoBehaviour
 	public int ID;
 	
 	//import functions from the DLL
-	[DllImport("smartglove", EntryPoint="establishConnection")]
+	[DllImport("smartglove", EntryPoint="establishConnection", SetLastError = true)]
 	public static extern bool openConnection(int gloveID);
 	[DllImport("smartglove", EntryPoint="closeConnection")]
 	public static extern bool closeConnection(int gloveID);
@@ -49,7 +49,11 @@ public class HandController:MonoBehaviour
 	{
 		if (connected) return true;
 		connected = openConnection(ID);
-		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
+        if (!connected)
+        {
+            //write the exception from the DLL if the connection doesn't work
+            Debug.Log("CONNECTION ERROR: 0x" + Marshal.GetLastWin32Error().ToString("X"));
+        }
 		return connected;
 	}
 	

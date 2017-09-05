@@ -63,17 +63,15 @@ public class ConnectInterface:MonoBehaviour
     private void ConnectGlove(int ID, Button thisButton)
     {
         Text thisText = thisButton.transform.GetChild(0).GetComponent<Text>();
-        if (thisText.text == "Connect")
+        if (thisText.text == "Connect" && mainInterface.ConnectGlove(ID))
         {
             thisText.text = "Disconnect";
-            mainInterface.ConnectGlove(ID);
             transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(true);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = true;
         }
-        else
+        else if (thisText.text == "Disconnect" && mainInterface.DisconnectGlove(ID))
         {
             thisText.text = "Connect";
-            mainInterface.DisconnectGlove(ID);
             transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(false);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = false;
         }

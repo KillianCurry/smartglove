@@ -90,15 +90,21 @@ extern "C" {
 			BLUETOOTH_GATT_FLAG_NONE);
 
 		//something went wrong and the function isn't returning service count
-		if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA)) printf("Issue with reading service buffer.\n");
-
-		printf("%d services found.\n", serviceCount);
+		if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA))
+		{
+			SetLastError(hr);
+			return false;
+		}
 
 		//allocate memory for the services buffer
 		PBTH_LE_GATT_SERVICE serviceBuffer = (PBTH_LE_GATT_SERVICE)malloc(sizeof(BTH_LE_GATT_SERVICE) * serviceCount);
 		//check if out of memory
-		if (serviceBuffer == NULL) printf("Not enough memory for service buffer.\n");
-		//otherwise, empty out the buffer (fill with zeros)
+		if (serviceBuffer == NULL)
+		{
+			SetLastError(E_OUTOFMEMORY);
+			return false;
+		}
+		//otherwise, clear the buffer memory
 		else RtlZeroMemory(serviceBuffer, sizeof(BTH_LE_GATT_SERVICE) * serviceCount);
 
 		//actually retrieve the services
@@ -110,10 +116,12 @@ extern "C" {
 			&numServices,
 			BLUETOOTH_GATT_FLAG_NONE);
 
-		printf("%d services found?\n", numServices);
-
 		//report if there's an issue with reading the services
-		if (hr != S_OK) printf("Issue with reading services.");
+		if (hr != S_OK)
+		{
+			SetLastError(hr);
+			return false;
+		}
 
 #pragma endregion
 
@@ -127,9 +135,11 @@ extern "C" {
 			&charCount,
 			BLUETOOTH_GATT_FLAG_NONE);
 		//something went wrong and the function isn't returning characteristic count
-		if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA)) printf("Issue with reading characteristic buffer.\n");
-
-		printf("%d characteristics found.\n", charCount);
+		if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA))
+		{
+			SetLastError(hr);
+			return false;
+		}
 
 		PBTH_LE_GATT_CHARACTERISTIC charBuffer = NULL;
 
@@ -138,7 +148,11 @@ extern "C" {
 			charBuffer = (PBTH_LE_GATT_CHARACTERISTIC)malloc(sizeof(BTH_LE_GATT_CHARACTERISTIC) * charCount);
 
 			//check if out of memory
-			if (charBuffer == NULL) printf("Not enough memory for characteristic buffer.\n");
+			if (charBuffer == NULL)
+			{
+				SetLastError(E_OUTOFMEMORY);
+				return false;
+			}
 			//otherwise, empty out the buffer (fill with zeros)
 			else RtlZeroMemory(charBuffer, sizeof(BTH_LE_GATT_CHARACTERISTIC) * charCount);
 		}
@@ -154,9 +168,11 @@ extern "C" {
 			BLUETOOTH_GATT_FLAG_NONE);
 
 		//report if there's an issue with reading the characteristics
-		if (hr != S_OK) printf("Issue with reading characteristics.");
-
-		printf("%d characteristics found?\n", numChars);
+		if (hr != S_OK)
+		{
+			SetLastError(hr);
+			return false;
+		}
 #pragma endregion
 
 #pragma region Set Notifications
@@ -175,14 +191,22 @@ extern "C" {
 				&descCount,
 				BLUETOOTH_GATT_FLAG_NONE);
 			//something went wrong and the function isn't returning descriptor count
-			if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA)) printf("Issue with reading descriptor buffer.\n");
+			if (hr != HRESULT_FROM_WIN32(ERROR_MORE_DATA))
+			{
+				SetLastError(hr);
+				return false;
+			}
 
 			PBTH_LE_GATT_DESCRIPTOR descBuffer = NULL;
 			if (descCount > 0)
 			{
 				descBuffer = (PBTH_LE_GATT_DESCRIPTOR)malloc(sizeof(BTH_LE_GATT_DESCRIPTOR) * descCount);
 
-				if (descBuffer == NULL) printf("Not enough memory for descriptor buffer.\n");
+				if (descBuffer == NULL)
+				{
+					SetLastError(E_OUTOFMEMORY);
+					return false;
+				}
 				else RtlZeroMemory(descBuffer, sizeof(BTH_LE_GATT_DESCRIPTOR) * descCount);
 			}
 
@@ -196,7 +220,11 @@ extern "C" {
 				&numDescs,
 				BLUETOOTH_GATT_FLAG_NONE);
 
-			if (hr != S_OK) printf("Issue with reading descriptors.");
+			if (hr != S_OK)
+			{
+				SetLastError(hr);
+				return false;
+			}
 
 			printf("%d descriptors found.\n", descCount);
 			PBTH_LE_GATT_DESCRIPTOR currDesc = &descBuffer[0];
@@ -211,7 +239,11 @@ extern "C" {
 				&newVal,
 				BLUETOOTH_GATT_FLAG_NONE);
 
-			if (hr != S_OK) printf("\nERROR: Could not set descriptor value.\n");
+			if (hr != S_OK)
+			{
+				SetLastError(hr);
+				return false;
+			}
 			else printf("Setting notification for service handle %d\n", charBuffer[ch].AttributeHandle);
 
 			if (ch == 0) gloves[gloveID].stretchHandle = charBuffer[ch].AttributeHandle;
@@ -233,10 +265,13 @@ extern "C" {
 				&eHandle,
 				BLUETOOTH_GATT_FLAG_NONE);
 
-			if (hr != S_OK) printf("\nERROR: could not register notification response.\n");
+			if (hr != S_OK)
+			{
+				SetLastError(hr);
+				return false;
+			}
 		}
 #pragma endregion
-		//TODO return false if an error is encountered
 		return true;
 	}
 

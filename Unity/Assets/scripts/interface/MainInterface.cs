@@ -46,6 +46,7 @@ public class MainInterface:MonoBehaviour
     [DllImport("smartglove", EntryPoint = "checkPoseName")]
     public static extern bool checkPoseName(ref int gloveID, StringBuilder poseName, ref int bufferSize);
 
+
     private void Start()
 	{
 		//keep track of children interfaces
@@ -180,15 +181,15 @@ public class MainInterface:MonoBehaviour
     }
 	
 	//connect a given glove object
-	public void ConnectGlove(int ID)
+	public bool ConnectGlove(int ID)
 	{
-		gloves[ID].GetComponent<HandController>().GloveConnect();
+        return gloves[ID].GetComponent<HandController>().GloveConnect();
 	}
 
     //disconnect a given glove object
-    public void DisconnectGlove(int ID)
+    public bool DisconnectGlove(int ID)
     {
-        gloves[ID].GetComponent<HandController>().GloveDisconnect();
+        return gloves[ID].GetComponent<HandController>().GloveDisconnect();
     }
 	
 	//clear a given glove object's calibration data
