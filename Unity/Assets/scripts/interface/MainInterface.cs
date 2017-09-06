@@ -26,9 +26,6 @@ public class MainInterface:MonoBehaviour
 	//find available gloves in the library
 	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr findGloves();
-	//free a pointer made earlier to avoid memory leaks
-	[DllImport("smartglove", EntryPoint="freePointer")]
-	public static extern void freePointer(IntPtr ptr);
 	//close the library, cleaning up all data structures
 	[DllImport("smartglove", EntryPoint="closeLibrary")]
 	public static extern void closeLibrary();
@@ -96,8 +93,7 @@ public class MainInterface:MonoBehaviour
         foreach (int ID in gloves.Keys)
         {
             HandController glove = gloves[ID].GetComponent<HandController>();
-            if (!glove.connected) continue;
-
+            
             //copy data from the DLL's unmanaged memory into a managed array
             double[] data = new double[18];
             IntPtr ptr = readGlove(ID);
@@ -122,8 +118,6 @@ public class MainInterface:MonoBehaviour
 		//retrieve the UUID list from the library
 		IntPtr ptr = findGloves();
 		string source = Marshal.PtrToStringAnsi(ptr);
-		//TODO figure out why this causes a crash
-		//freePointer(ptr);
 		//iterate through UUIDs, using space as a delimiter
 		string[] delimiters = {" "};
 		string[] UUIDs = source.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);

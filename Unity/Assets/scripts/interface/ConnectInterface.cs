@@ -15,7 +15,7 @@ public class ConnectInterface:MonoBehaviour
 		//instantiate a new panel from the prefab
 		GameObject panel = Instantiate((GameObject)Resources.Load("prefabs/Glove Panel", typeof(GameObject)), transform);
 		//position the panel in the list (stack from bottom to top)
-		panel.transform.localPosition += Vector3.up * (45f * (transform.childCount - 2));
+		panel.transform.localPosition += Vector3.up * (35f * (transform.childCount-1)+5f);
 		panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + ID.ToString();
 		
 		//set up event system
@@ -66,20 +66,20 @@ public class ConnectInterface:MonoBehaviour
         if (thisText.text == "Connect" && mainInterface.ConnectGlove(ID))
         {
             thisText.text = "Disconnect";
-            transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(true);
+            transform.GetChild(ID).GetChild(5).gameObject.SetActive(true);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = true;
         }
         else if (thisText.text == "Disconnect" && mainInterface.DisconnectGlove(ID))
         {
             thisText.text = "Connect";
-            transform.GetChild(ID + 1).GetChild(5).gameObject.SetActive(false);
+            transform.GetChild(ID).GetChild(5).gameObject.SetActive(false);
             thisButton.transform.parent.GetChild(4).gameObject.GetComponent<Button>().interactable = false;
         }
     }
 
     public void UpdateNotificationIndicator(int ID, double lastNotification)
     {
-        transform.GetChild(ID+1).GetChild(5).gameObject.GetComponent<Image>().color = Color.Lerp(new Color(0.0f, 0.68f, 0.934f), new Color(0.0f, 0.68f, 0.934f, 0f), (float)(lastNotification / fadeTime));
+        transform.GetChild(ID).GetChild(5).gameObject.GetComponent<Image>().color = Color.Lerp(new Color(0.0f, 0.68f, 0.934f), new Color(0.0f, 0.68f, 0.934f, 0f), (float)(lastNotification / fadeTime));
     }
 	
 	private void EnterPanel(int ID)

@@ -15,7 +15,8 @@ using std::endl;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+	//copied from http://social.msdn.microsoft.com/Forums/windowshardware/en-US/e5e1058d-5a64-4e60-b8e2-0ce327c13058/erroraccessdenied-error-when-trying-to-receive-data-from-bluetooth-low-energy-devices?forum=wdk
+	//credits to Andrey_sh
 	SMARTGLOVE_API HANDLE getHandle(__in GUID pGUID)
 	{
 		HDEVINFO hDI;
@@ -318,7 +319,6 @@ extern "C" {
 
 	SMARTGLOVE_API void closeConnection(int gloveID)
 	{
-		//TODO is this all that's required to close the BLE connection?
 		CloseHandle(gloves[gloveID].pHandle);
 	}
 
@@ -335,7 +335,7 @@ extern "C" {
 
 	SMARTGLOVE_API char* findGloves()
 	{
-		//TODO actually find paired smartgloves and their UUIDs
+		//TODO search for paired BLE devices
 		std::string str = "";
 		for each (Glove g in gloves)
 		{
@@ -344,8 +344,7 @@ extern "C" {
 		return &str[0];
 	}
 
-	//TODO consider just calling a main update loop that calls getData()
-
+	//TODO allow user to set joint angle min/max?
 	SMARTGLOVE_API double* getData(int gloveID)
 	{
 		//allocate enough memory for xyz orientation + 15 finger joints
@@ -381,8 +380,6 @@ extern "C" {
 			}
 		}
 
-		//TODO split returns of IMU and stretch sensors into two functions?
-
 		//return a pointer to the vector
 		double* pntr = &values[0];
 		return pntr;
@@ -391,11 +388,6 @@ extern "C" {
 	SMARTGLOVE_API double getLastNotification(int gloveID)
 	{
 		return std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - gloves[gloveID].lastNotification).count();
-	}
-
-	SMARTGLOVE_API void freePointer(char* ptr)
-	{
-		delete ptr;
 	}
 
 	SMARTGLOVE_API void clearCalibration(int gloveID)

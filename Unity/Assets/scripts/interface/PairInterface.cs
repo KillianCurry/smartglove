@@ -209,8 +209,7 @@ public class PairInterface:MonoBehaviour
 				mainInterface.gloves[swapID].GetComponent<HandController>().handedness = swapHand;
 				//flip the glove's texture
 				mainInterface.gloves[swapID].GetComponent<HandController>().UpdateTexture();
-				//TODO fix this to exceed 9 pairs
-				int pair = (int)Char.GetNumericValue(swapBlock.transform.parent.name[1]);
+				int pair = Int32.Parse(swapBlock.transform.parent.name.Substring(1));
 				mainInterface.gloves[swapID].transform.localPosition = glovePositions[pair] + swapHand * Vector3.right * gloveSeparation;
 			}
 		}
