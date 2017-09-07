@@ -12,7 +12,7 @@ public class MainInterface:MonoBehaviour
 {
 	//use a dictionary to match glove IDs to corresponding 3D objects
 	[HideInInspector]
-	public Dictionary<int,GameObject> gloves;
+	public Dictionary<int,HandController> gloves;
 
     public bool testPoseMet;
 
@@ -24,25 +24,31 @@ public class MainInterface:MonoBehaviour
 	private PairInterface pairInterface;
 	
 	//find available gloves in the library
-	[DllImport("smartglove", EntryPoint="findGloves", CallingConvention = CallingConvention.Cdecl)]
+	[DllImport("smartglove", EntryPoint = "findGloves", CallingConvention = CallingConvention.Cdecl)]
 	public static extern IntPtr findGloves();
 	//close the library, cleaning up all data structures
-	[DllImport("smartglove", EntryPoint="closeLibrary")]
+	[DllImport("smartglove", EntryPoint = "closeLibrary")]
 	public static extern void closeLibrary();
 	//add a new glove to the library based on a UUID string
-	[DllImport("smartglove", EntryPoint="addUUID")]
+	[DllImport("smartglove", EntryPoint = "addUUID")]
 	public static extern void addUUID(StringBuilder buffer, ref int bufferSize);
+    //open a glove's BLE connection
+    [DllImport("smartglove", EntryPoint = "establishConnection", SetLastError = true)]
+    public static extern bool openConnection(int gloveID);
+    //close a glove's BLE connection
+    [DllImport("smartglove", EntryPoint = "closeConnection")]
+    public static extern bool closeConnection(int gloveID);
+    //read a glove's stretch and IMU data
     [DllImport("smartglove", EntryPoint = "getData", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr readGlove(int gloveID);
+    //clear a glove's autocalibrated values
+    [DllImport("smartglove", EntryPoint = "clearCalibration")]
+    public static extern void clearCalibration(int gloveID);
+    //get the time since the last notification on the specified glove
     [DllImport("smartglove", EntryPoint = "getLastNotification", CallingConvention = CallingConvention.Cdecl)]
     public static extern double getLastNotification(int gloveID);
-    [DllImport("smartglove", EntryPoint = "capturePose")]
-    public static extern void capturePose(ref int gloveID, StringBuilder poseName, ref int bufferSize);
-    [DllImport("smartglove", EntryPoint = "writeOutPoses")]
-    public static extern void writeOutPoses(StringBuilder fileName, ref int bufferSize);
-    [DllImport("smartglove", EntryPoint = "checkPoseName")]
-    public static extern bool checkPoseName(ref int gloveID, StringBuilder poseName, ref int bufferSize);
-
+    [DllImport("smartglove", EntryPoint = "setAngles")]
+    public static extern void setAngles(int gloveID, IntPtr minAngles, IntPtr maxAngles);
 
     private void Start()
 	{
@@ -55,7 +61,7 @@ public class MainInterface:MonoBehaviour
 		pairInterface = transform.GetChild(2).gameObject.GetComponent<PairInterface>();
 		pairInterface.mainInterface = thisScript;
 		
-		gloves = new Dictionary<int,GameObject>();
+		gloves = new Dictionary<int,HandController>();
 		
 		//add new gloves to the library
 		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
@@ -73,30 +79,11 @@ public class MainInterface:MonoBehaviour
 
     private void Update()
     {
-        //int gloveNum = 0;
-        //string poseName = "test";
-        //string fileName = "C:\\Users\\Toto\\Desktop\\FYP\\poses.txt";
-        //int nameBufferSize = poseName.Length;
-        //int fileBufferSize = fileName.Length;
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    capturePose(ref gloveNum, new StringBuilder(poseName, nameBufferSize), ref nameBufferSize);
-        //    writeOutPoses(new StringBuilder(fileName, fileBufferSize), ref fileBufferSize);
-        //}
-
-        //testPoseMet = checkPoseName(ref gloveNum, new StringBuilder(poseName, bufferSize), ref bufferSize);
-        //if (testPoseMet)
-        //{
-        //    Debug.Log(Time.time + "Pose Met");
-        //}
-
-        foreach (int ID in gloves.Keys)
+        foreach (HandController glove in gloves.Values)
         {
-            HandController glove = gloves[ID].GetComponent<HandController>();
-            
             //copy data from the DLL's unmanaged memory into a managed array
             double[] data = new double[18];
-            IntPtr ptr = readGlove(ID);
+            IntPtr ptr = readGlove(glove.ID);
             Marshal.Copy(ptr, data, 0, 18);
             
             //copy orientation data
@@ -106,10 +93,10 @@ public class MainInterface:MonoBehaviour
             for (int i = 0; i < 15; i++)
             {
                 //change 0-1 to degrees
-                glove.fingerRotations[i] = glove.rotationMinimum[i] + (data[i+3] * glove.rotationMaximum[i]);
+                glove.fingerRotations[i] = data[i + 3];
             }
 
-            connectInterface.UpdateNotificationIndicator(ID, getLastNotification(ID));
+            connectInterface.UpdateNotificationIndicator(glove.ID, getLastNotification(glove.ID));
         }
     }
 	
@@ -132,7 +119,7 @@ public class MainInterface:MonoBehaviour
 	public void UpdateOrbit()
 	{
 		Vector3 center = Vector3.zero;
-		foreach (GameObject g in gloves.Values)
+		foreach (HandController g in gloves.Values)
 		{
 			//add the center of the glove (origin is at the wrist, so some geometry is required)
 			center += g.transform.localPosition + g.transform.forward * 2.3f * g.transform.localScale.z;
@@ -148,14 +135,24 @@ public class MainInterface:MonoBehaviour
 		GameObject newGlove = new GameObject();
 		newGlove.name = "Glove " + ID.ToString();
 		HandController gloveScript = (HandController)newGlove.AddComponent(typeof(HandController));
-		gloveScript.ID = ID;
-		gloves.Add(ID, newGlove);
+
+        //set joint angle ranges in library
+        IntPtr minPtr = Marshal.AllocHGlobal(Marshal.SizeOf(gloveScript.rotationMinimum[0]) * 15);
+        Marshal.Copy(gloveScript.rotationMinimum.ToArray(), 0, minPtr, 15);
+        IntPtr maxPtr = Marshal.AllocHGlobal(Marshal.SizeOf(gloveScript.rotationMaximum[0]) * 15);
+        Marshal.Copy(gloveScript.rotationMaximum.ToArray(), 0, maxPtr, 15);
+        setAngles(ID, minPtr, maxPtr);
+        Marshal.FreeHGlobal(minPtr);
+        Marshal.FreeHGlobal(maxPtr);
+
+        gloveScript.ID = ID;
+		gloves.Add(ID, gloveScript);
 
 		//add pairing block
 		pairInterface.AddPairBlock(ID);
 		
 		//highlight new glove
-		Camera.main.GetComponent<HighlightEffect>().highlightObject = gloves[ID];
+		Camera.main.GetComponent<HighlightEffect>().highlightObject = newGlove;
 		
 		//update the orbit center
 		UpdateOrbit();
@@ -166,8 +163,8 @@ public class MainInterface:MonoBehaviour
         //remove highlight effect
         Camera.main.GetComponent<HighlightEffect>().highlightObject = null;
         //remove the glove from the dictionary and the scene
-        GameObject glove = gloves[ID];
-        glove.GetComponent<HandController>().GloveDisconnect();
+        DisconnectGlove(ID);
+        GameObject glove = gloves[ID].gameObject;
         gloves.Remove(ID);
         GameObject.Destroy(glove);
         //remove corresponding pairblock
@@ -177,20 +174,30 @@ public class MainInterface:MonoBehaviour
 	//connect a given glove object
 	public bool ConnectGlove(int ID)
 	{
-        return gloves[ID].GetComponent<HandController>().GloveConnect();
+        if (gloves[ID].connected) return true;
+        gloves[ID].connected = openConnection(ID);
+        if (!gloves[ID].connected)
+        {
+            //write the exception from the DLL if the connection doesn't work
+            Debug.Log("CONNECTION ERROR: 0x" + Marshal.GetLastWin32Error().ToString("X"));
+        }
+        return gloves[ID].GetComponent<HandController>().connected;
 	}
 
     //disconnect a given glove object
     public bool DisconnectGlove(int ID)
     {
-        return gloves[ID].GetComponent<HandController>().GloveDisconnect();
+        if (!gloves[ID].connected) return true;
+        gloves[ID].connected = !closeConnection(ID);
+        return !gloves[ID].connected;
     }
 	
 	//clear a given glove object's calibration data
 	public void ClearGlove(int ID)
 	{
-		gloves[ID].GetComponent<HandController>().GloveClear();
-	}
+        gloves[ID].SetZeroRotation();
+        clearCalibration(ID);
+    }
 	
 	//called when quitting the application
 	void OnApplicationQuit()
@@ -198,7 +205,7 @@ public class MainInterface:MonoBehaviour
 		//disconnect all gloves so reading coroutines end
 		foreach (int ID in gloves.Keys)
 		{
-			gloves[ID].GetComponent<HandController>().GloveDisconnect();
+            DisconnectGlove(ID);
 		}
 		//clean up the library
 		closeLibrary();

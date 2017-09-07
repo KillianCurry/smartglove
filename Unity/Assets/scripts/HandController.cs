@@ -11,13 +11,13 @@ public class HandController:MonoBehaviour
     public float rotationSpeed = 180f;
 	//list of finger rotation ranges
     [HideInInspector]
-	public List<float> rotationMinimum;
+	public List<double> rotationMinimum;
     [HideInInspector]
-    public List<float> rotationMaximum;
+    public List<double> rotationMaximum;
 	//list of each joint
 	private List<Transform> joints;
 	
-	//TODO roll this calibration into the API
+    //the 'forward' rotation
 	private Quaternion zeroRotation;
 
 	[HideInInspector]
@@ -35,42 +35,6 @@ public class HandController:MonoBehaviour
 	[HideInInspector]
 	public bool connected = false;
 	public int ID;
-	
-	//import functions from the DLL
-	[DllImport("smartglove", EntryPoint="establishConnection", SetLastError = true)]
-	public static extern bool openConnection(int gloveID);
-	[DllImport("smartglove", EntryPoint="closeConnection")]
-	public static extern bool closeConnection(int gloveID);
-	[DllImport("smartglove", EntryPoint="getData", CallingConvention = CallingConvention.Cdecl)]
-	public static extern IntPtr readGlove(int gloveID);
-	[DllImport("smartglove", EntryPoint="clearCalibration")]
-	public static extern void clearCalibration(int gloveID);
-	
-	public bool GloveConnect()
-	{
-		if (connected) return true;
-		connected = openConnection(ID);
-        if (!connected)
-        {
-            //write the exception from the DLL if the connection doesn't work
-            Debug.Log("CONNECTION ERROR: 0x" + Marshal.GetLastWin32Error().ToString("X"));
-        }
-		return connected;
-	}
-	
-	public bool GloveDisconnect()
-	{
-		if (!connected) return true;
-		connected = !closeConnection(ID);
-		//if (!connected) StopCoroutine("GloveRead");
-		return !connected;
-	}
-	
-	public void GloveClear()
-	{
-		zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
-		clearCalibration(ID);
-	}
 
     //these values need to be initialized before MainInterface accesses them in its Update loop
     private void Awake()
@@ -84,7 +48,7 @@ public class HandController:MonoBehaviour
 			0f,0f,0f //pinky
         };
         //set rotation limits
-        rotationMinimum = new List<float>()
+        rotationMinimum = new List<double>()
         {
             0f,0f,0f,	 //thumb
 			-10f,-15f,0f,//index
@@ -92,7 +56,7 @@ public class HandController:MonoBehaviour
 			-10f,-15f,0f,//ring
 			-10f,-15f,0f //pinky
 		};
-        rotationMaximum = new List<float>()
+        rotationMaximum = new List<double>()
         {
             90f,90f,90f, //thumb
 			75f,110f,80f,//index
@@ -134,6 +98,11 @@ public class HandController:MonoBehaviour
 		}
 		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 	}
+
+    public void SetZeroRotation()
+    {
+        zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
+    }
 	
 	public void UpdateTexture()
 	{
@@ -141,10 +110,5 @@ public class HandController:MonoBehaviour
 		if (handedness == -1) texName += "R";
 		else texName += "L";
 		transform.GetChild(1).GetComponent<SkinnedMeshRenderer>().material.mainTexture = (Texture)Resources.Load(texName, typeof(Texture));
-	}
-	
-	void OnApplicationQuit()
-	{
-		if (connected) GloveDisconnect();
 	}
 }

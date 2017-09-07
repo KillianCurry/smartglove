@@ -51,9 +51,11 @@ extern "C" {
 	///<summary>Finds all paired StretchSense gloves and generates corresponding Glove objects for the gloves vector.</summary>
 	///<returns>An ordered string of glove UUIDs, separated by spaces.</returns>
 	SMARTGLOVE_API char* findGloves();
-	///<summary>Reads values from the BLE peripheral. Sensor values returned are the three IMU orientation components, then the ten stretch sensors, in order.</summary>
+	///<summary>Reads values from the BLE peripheral.</summary>
 	///<param name="gloveID">ID of the glove to read.</param>
-	///<returns>An array of doubles for the sensor values.</returns>
+	///<returns>An array of doubles for the sensor values.
+	///			First 3 values = IMU heading, pitch, roll.
+	///			Next 15 values = rotation of each finger joint, from thumb base to pinky tip.</returns>
 	SMARTGLOVE_API double* getData(int gloveID);
 	///<summary>Read time since last BLE notification.</summary>
 	///<param name="gloveID">ID of the glove to read last notification time from.</param>
@@ -62,18 +64,13 @@ extern "C" {
 	///<summary>Clears the autocalibrated values.</summary>
 	///<param name="gloveID">ID of the glove to clear calibration from.</param>
 	SMARTGLOVE_API void clearCalibration(int gloveID);
+	///<summary>Sets the glove's minimum and maximum rotations for each joint.</summary>
+	///<param name="gloveID">ID of the glove to set angles for.</param>
+	///<param name="minimum">An array of minimum angles for each of the 15 joints.</param>
+	///<param name="maximum">An array of minimum angles for each of the 15 joints.</param>
+	SMARTGLOVE_API void setAngles(int gloveID, double* minimum, double* maximum);
 	///<summary>Cleans all the memory used by the library.</summary>
 	SMARTGLOVE_API void closeLibrary();
-
-	SMARTGLOVE_API void capturePose(int gloveID, char* buffer, int* bufferSize);
-
-	SMARTGLOVE_API void writeOutPoses(char* buffer, int* bufferSize);
-
-	SMARTGLOVE_API void readInPoses(std::string fileName);
-
-	SMARTGLOVE_API bool checkPoseName(int gloveID, char* buffer, int* bufferSize);
-
-	std::string convertChar(char *buffer, int *bufferSize);
 #ifdef __cplusplus
 }
 #endif

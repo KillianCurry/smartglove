@@ -35,9 +35,25 @@ void Glove::parseUUID(std::string _UUID)
 	stretchRaw = std::vector<unsigned short>(sensorCount, 0);
 	minValues = std::vector<unsigned short>(sensorCount, USHRT_MAX);
 	maxValues = std::vector<unsigned short>(sensorCount, 0);
+	minAngles = std::vector<double>(15, 0);
+	maxAngles = std::vector<double>(15, 1);
 	stretch = std::vector<double>(sensorCount, 0);
 	//next two digits are service number
 	//remaining UUID data is meaningless
+}
+
+void Glove::setAngles(double* minimum, double* maximum)
+{
+	minAngles.clear();
+	for (int i = 0; i < 15; i++)
+	{
+		minAngles.push_back(minimum[i]);
+	}
+	maxAngles.clear();
+	for (int i = 0; i < 15; i++)
+	{
+		maxAngles.push_back(maximum[i]);
+	}
 }
 
 void Glove::clearCalibration()

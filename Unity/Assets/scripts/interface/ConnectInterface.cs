@@ -85,7 +85,7 @@ public class ConnectInterface:MonoBehaviour
 	private void EnterPanel(int ID)
 	{
 		//if this panel's glove has been added, highlight it in the 3D view
-		if (mainInterface.gloves.ContainsKey(ID)) Camera.main.GetComponent<HighlightEffect>().highlightObject = mainInterface.gloves[ID];
+		if (mainInterface.gloves.ContainsKey(ID)) Camera.main.GetComponent<HighlightEffect>().highlightObject = mainInterface.gloves[ID].gameObject;
 	}
 	
 	private void ExitPanel()

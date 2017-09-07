@@ -281,12 +281,14 @@ extern "C" {
 		PBLUETOOTH_GATT_VALUE_CHANGED_EVENT ValueChangedEventParameters = (PBLUETOOTH_GATT_VALUE_CHANGED_EVENT)EventOutParameter;
 		int gloveID = *(int*)Context;
 
-		//the values are stored as 2-byte short integers
-		//convert them with bitwise math
+		//the values in the characteristic are stored in two bytes
+		//use bitwise math to convert them to short ints
+		//notification is stretch characteristic
 		if (ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].stretchHandle)
 		{
 			for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 			{
+				//update the raw stretch value
 				gloves[gloveID].stretchRaw[i] =
 					ValueChangedEventParameters->CharacteristicValue->Data[i * 2] * 256
 					+ ValueChangedEventParameters->CharacteristicValue->Data[(i * 2) + 1];
@@ -294,16 +296,17 @@ extern "C" {
 				if (gloves[gloveID].stretchRaw[i] < gloves[gloveID].minValues[i]) gloves[gloveID].minValues[i] = gloves[gloveID].stretchRaw[i];
 				if (gloves[gloveID].stretchRaw[i] > gloves[gloveID].maxValues[i]) gloves[gloveID].maxValues[i] = gloves[gloveID].stretchRaw[i];
 				//perform calibration
-				//set to 0 if raw data is NaN or calibration isn't satisfactory
+				//set to 0 if raw data is NaN or calibration isn't satisfactory (min exceeds max)
 				if (gloves[gloveID].stretchRaw[i] != gloves[gloveID].stretchRaw[i] ||
 					gloves[gloveID].minValues[i] > gloves[gloveID].maxValues[i])
 					gloves[gloveID].stretch[i] = 0;
-				//otherwise, use autocalibration limits to set glove
+				//otherwise, use autocalibration limits to set glove's processed stretch value
 				else
 					gloves[gloveID].stretch[i] = (double)(gloves[gloveID].stretchRaw[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
 
 			}
 		}
+		//notification is IMU characteristic (if !hasIMU, imuHandle will not be initialized)
 		else if (gloves[gloveID].hasIMU && ValueChangedEventParameters->ChangedAttributeHandle == gloves[gloveID].imuHandle)
 		{
 			for (int i = 0; i < 6; i++)
@@ -319,16 +322,19 @@ extern "C" {
 
 	SMARTGLOVE_API void closeConnection(int gloveID)
 	{
+		//close the handle that represents the BLE peripheral
 		CloseHandle(gloves[gloveID].pHandle);
 	}
 
 	SMARTGLOVE_API void addUUID(char* buffer, int* bufferSize)
 	{
+		//convert the character buffer to a string
 		std::string UUID = "";
 		for (int i = 0; i < *bufferSize; i++)
 		{
 			UUID += *(buffer + i);
 		}
+		//create the new glove and add it to the vector
 		Glove newGlove(UUID, (int)gloves.size());
 		gloves.push_back(newGlove);
 	}
@@ -344,7 +350,6 @@ extern "C" {
 		return &str[0];
 	}
 
-	//TODO allow user to set joint angle min/max?
 	SMARTGLOVE_API double* getData(int gloveID)
 	{
 		//allocate enough memory for xyz orientation + 15 finger joints
@@ -360,16 +365,16 @@ extern "C" {
 			if (gloves[gloveID].sensorCount == 5)
 			{
 				values[3 + i * 3] = 
-				values[3 + i * 3 + 1] = 
-				values[3 + i * 3 + 2] = gloves[gloveID].stretch[i];
+				values[4 + i * 3] = 
+				values[5 + i * 3] = gloves[gloveID].stretch[i];
 			}
 			//10 SENSOR MODEL
 			//   even i = base joint, odd i = next two joints
 			else if (gloves[gloveID].sensorCount == 10)
 			{
 				if ((i%2)==0) values[3 + (i/2) * 3] = gloves[gloveID].stretch[i];
-				else		  values[3 + (i/2) * 3 + 1] =
-							  values[3 + (i/2) * 3 + 2] = gloves[gloveID].stretch[i];
+				else		  values[4 + (i/2) * 3] =
+							  values[5 + (i/2) * 3] = gloves[gloveID].stretch[i];
 			}
 			//15 SENSOR MODEL
 			//   sensors map directly to joints
@@ -379,10 +384,21 @@ extern "C" {
 				values[i + 3] = gloves[gloveID].stretch[i];
 			}
 		}
+		//loop through again, adjusting the values from 0-1 to the desired angles
+		for (int i = 0; i < 15; i++)
+		{
+			values[i + 3] *= gloves[gloveID].maxAngles[i];
+			values[i + 3] += gloves[gloveID].minAngles[i];
+		}
 
 		//return a pointer to the vector
 		double* pntr = &values[0];
 		return pntr;
+	}
+
+	SMARTGLOVE_API void setAngles(int gloveID, double* minimum, double* maximum)
+	{
+		gloves[gloveID].setAngles(minimum, maximum);
 	}
 
 	SMARTGLOVE_API double getLastNotification(int gloveID)

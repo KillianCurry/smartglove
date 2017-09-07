@@ -165,16 +165,15 @@ public class PairInterface:MonoBehaviour
 		//reassigns pairblock to a pairslot the mouse is over
 		//if pairblock is not dropped on pairslot, return to original pairslot
 		Transform newParent = originalParent;
-		//TODO increase droppable zone to fill margins
 		//loop through open slots
 		for (int i = 0; i < leftPairSlots.Count; i++)
 		{
 			//check mouse position against available pairslots
 			Rect slotRect = leftPairSlots[i].GetComponent<RectTransform>().rect;
-			if (Input.mousePosition.x >= leftPairSlots[i].transform.position.x - slotRect.width/2f &&
-				Input.mousePosition.y >= leftPairSlots[i].transform.position.y - slotRect.height/2f &&
-				Input.mousePosition.x <= leftPairSlots[i].transform.position.x + slotRect.width/2f &&
-				Input.mousePosition.y <= leftPairSlots[i].transform.position.y + slotRect.height/2f)
+			if (Input.mousePosition.x >= leftPairSlots[i].transform.position.x - (slotRect.width/2f+2) &&
+				Input.mousePosition.y >= leftPairSlots[i].transform.position.y - (slotRect.height/2f+2) &&
+				Input.mousePosition.x <= leftPairSlots[i].transform.position.x + (slotRect.width/2f+2) &&
+				Input.mousePosition.y <= leftPairSlots[i].transform.position.y + (slotRect.height/2f+2))
 			{
 				newParent = leftPairSlots[i].transform;
 				break;

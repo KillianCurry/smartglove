@@ -5,14 +5,22 @@
 #include <SD.h>
 
 //HARDWARE SPECIFICATIONS
+//frequency in Hz for updates to the BLE, IMU, and SD
 #define   FREQUENCY_BLE_NEW_SAMPLE      12.5
+#define   FREQUENCY_IMU_NEW_SAMPLE      25
 #define   FREQUENCY_SD_NEW_SAMPLE       40
-#define   CHANNELS                      5
+//number of channels on the SPI circuit
+#define   CHANNELS                      10
 //flags to include certain sections of code
-//#define   ENABLE_IMU
+//6DoF inertial motion unit using Madgwick algorithm
+#define   ENABLE_IMU
+//Bluetooth Low-Energy communication for interface with the C++ library
 #define   ENABLE_BLE
+//logging to Secure Digital card
 //#define   ENABLE_SD
+//reading StretchSense Serial Peripheral Interface circuit
 #define   ENABLE_SSL_SPI
+//printing to Arduino's serial monitor
 #define   ENABLE_SERIAL_PRINT
 
 // SD declarations
@@ -127,24 +135,27 @@ void setup() {
   microsPrevious_BLE = micros();
   microsPerReading_BLE = 1000000 / FREQUENCY_BLE_NEW_SAMPLE; //12.5 Hz
 
+  Serial.print("b");
   blePeripheral.setLocalName("StretchSense_glove01"); //broadcast device name
   blePeripheral.setDeviceName("StretchSense_glove01");
 
   //UUID SPECIFICATIONS
   //first three digits: IMU (000 = none, 006 = 6DoF)
   //second three digits: sensor count (010 = 10-sensor, 005 = 5-sensor)
-  #ifdef ENABLE_IMU
+#ifdef ENABLE_IMU
   String imuString = "006";
-  #else
+#else
   String imuString = "000";
-  #endif
-  char* chanString;
-  sprintf(chanString, "%3d", CHANNELS);
-  Serial.println(imuString+chanString+"01"+"-7374-7265-7563-6873656e7365");
-  String UUIDservice = imuString+chanString+"01"+"-7374-7265-7563-6873656e7365";
+#endif
+  String chanString = String(CHANNELS);
+  while (chanString.length() < 3)
+  {
+    chanString = "0" + chanString;
+  }
+  String UUIDservice = imuString + chanString + "01" + "-7374-7265-7563-6873656e7365";
   stretchSenseService = BLEService(UUIDservice.c_str());
-  stretchSenseChar = BLECharacteristic((imuString+chanString+"02"+"-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, CHANNELS*2);
-  imuChar = BLECharacteristic((imuString+chanString+"50"+"-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, 20);
+  stretchSenseChar = BLECharacteristic((imuString + chanString + "02" + "-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, CHANNELS * 2);
+  imuChar = BLECharacteristic((imuString + chanString + "50" + "-7374-7265-7563-6873656e7365").c_str(), BLERead | BLENotify, 20);
 
   blePeripheral.setAdvertisedServiceUuid(stretchSenseService.uuid());  // add the service UUID
   blePeripheral.addAttribute(stretchSenseService);   // add your custom service
@@ -167,6 +178,8 @@ void setup() {
 
   //Initialise the IMU ////////////////////////////////////////
 #ifdef ENABLE_IMU
+  microsPrevious_IMU = micros();
+  microsPerReading_IMU = 1000000 / FREQUENCY_IMU_NEW_SAMPLE;
   // start the IMU and filter
   CurieIMU.begin();
   //CurieIMU.setGyroRate(25);
@@ -258,7 +271,9 @@ void loop() {
   /////////////////////////////////////////////////////////////
 #ifdef ENABLE_IMU
   microsNow = micros();
-  if (microsNow - microsPrevious_BLE >= microsPerReading_BLE) {
+  if (microsNow - microsPrevious_IMU >= microsPerReading_IMU) {
+    // increment previous time, so we keep proper pace
+    microsPrevious_IMU = microsPrevious_IMU + microsPerReading_IMU;
     // read raw data from CurieIMU
     CurieIMU.readMotionSensor(aix, aiy, aiz, gix, giy, giz);
 
@@ -350,7 +365,6 @@ void loop() {
 
     // increment previous time, so we keep proper pace
     microsPrevious_SD = microsPrevious_SD + microsPerReading_SD;
-    unsigned long time = millis();
     Serial.println("Record");
     writeInSdCard();
   }

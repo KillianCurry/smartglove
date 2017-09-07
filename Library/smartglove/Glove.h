@@ -28,6 +28,9 @@ public:
 	//the minimum and maximum raw stretch values
 	std::vector<unsigned short> minValues;
 	std::vector<unsigned short> maxValues;
+	//the minimum and maximum angles of rotation for each joint
+	std::vector<double> minAngles;
+	std::vector<double> maxAngles;
 	//the processed stretch sensor values
 	std::vector<double> stretch;
 
@@ -54,6 +57,7 @@ public:
 	Glove(std::string _UUID, int _ID);
 	~Glove();
 	void parseUUID(std::string _UUID);
+	void setAngles(double* minimum, double* maximum);
 	void clearCalibration();
 };
 
