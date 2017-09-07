@@ -54,10 +54,20 @@ public:
 
 	HANDLE pHandle;
 
+	///<summary>Initialize the glove object.</summary>
+	///<param name="_UUID">UUID of the glove hardware.</summary>
+	///<param name="_ID">The unique identifier keeping track of this glove.</param>
 	Glove(std::string _UUID, int _ID);
+	///<summary>Deletes the glove object.</summary>
 	~Glove();
+	///<summary>Find glove hardware from the UUID.</summary>
+	///<param name="_UUID">The UUID to parse.</summary>
 	void parseUUID(std::string _UUID);
+	///<summary>Set the glove's minimum and maximum joint rotation angles.</summary>
+	///<param name="minimum">An array of the 15 minimum rotation values.</param>
+	///<param name="maximum">An array of the 15 maximum rotation values.</param>
 	void setAngles(double* minimum, double* maximum);
+	///<summary>Clear the glove's autocalibrated values.</summary>
 	void clearCalibration();
 };
 

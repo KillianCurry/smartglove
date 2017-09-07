@@ -7,26 +7,26 @@ using UnityEngine;
 
 public class HandController:MonoBehaviour
 {
-    [Tooltip("Maximum degrees the finger can rotate per second.")]
-    public float rotationSpeed = 180f;
 	//list of finger rotation ranges
     [HideInInspector]
 	public List<double> rotationMinimum;
     [HideInInspector]
     public List<double> rotationMaximum;
-	//list of each joint
-	private List<Transform> joints;
-	
-    //the 'forward' rotation
-	private Quaternion zeroRotation;
+    //maximum degrees each joint can rotate per second
+    private float rotationSpeed = 200f;
 
-	[HideInInspector]
-	//-1 is left-handed, 1 is right-handed
-	public int handedness = 1;
-
-    //list of each joint's rotation
+    //list of each joint
+    private List<Transform> joints;
+    //list of each joint's rotation in degrees
     [HideInInspector]
     public List<double> fingerRotations;
+    //-1 is left-handed, 1 is right-handed
+    [HideInInspector]
+    public int handedness = 1;
+
+    //the 'forward' rotation
+    private Quaternion zeroRotation;
+
 	//vector of the x, y, and z rotation
     [HideInInspector]
 	public Vector3 palmOrientation;
@@ -34,9 +34,12 @@ public class HandController:MonoBehaviour
 	//is the BLE connected?
 	[HideInInspector]
 	public bool connected = false;
+    //the ID this glove is associated with in the interface and library
 	public int ID;
-
-    //these values need to be initialized before MainInterface accesses them in its Update loop
+    
+    /// <summary>
+    /// Initialize some vectors that are used in MainInterface's update loop.
+    /// </summary>
     private void Awake()
     {
         fingerRotations = new List<double>()
@@ -66,6 +69,9 @@ public class HandController:MonoBehaviour
 		};
     }
 	
+    /// <summary>
+    /// Initialize glove geometry and rig.
+    /// </summary>
 	void Start()
 	{
 		joints = new List<Transform>();
@@ -85,6 +91,9 @@ public class HandController:MonoBehaviour
 		UpdateTexture();
 	}
 	
+    /// <summary>
+    /// Update the rig to match the specified finger rotations.
+    /// </summary>
 	void Update()
 	{
 		transform.localScale = new Vector3(-handedness, 1, 1);
@@ -99,11 +108,17 @@ public class HandController:MonoBehaviour
 		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
 	}
 
+    /// <summary>
+    /// Set the 'forward' rotation.
+    /// </summary>
     public void SetZeroRotation()
     {
         zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
     }
 	
+    /// <summary>
+    /// Flip the texture to match the handedness.
+    /// </summary>
 	public void UpdateTexture()
 	{
 		string texName = "textures/logo";

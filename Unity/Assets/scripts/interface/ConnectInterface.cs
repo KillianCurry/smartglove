@@ -10,6 +10,11 @@ public class ConnectInterface:MonoBehaviour
     //time it takes from the last notification for the indicator to fade away completely
     public double fadeTime = 1f;
 	
+    /// <summary>
+    /// Add a new connection panel to the connection interface.
+    /// </summary>
+    /// <param name="ID">The ID of the glove this connection panel is linked with.</param>
+    /// <param name="UUID">The UUID of this panel's corresponding glove.</param>
 	public void AddPanel(int ID, string UUID)
 	{
 		//instantiate a new panel from the prefab
@@ -38,6 +43,11 @@ public class ConnectInterface:MonoBehaviour
         clearButton.onClick.AddListener(() => mainInterface.ClearGlove(ID));
 	}
 
+    /// <summary>
+    /// Add a new glove to the world, or remove a glove from the world.
+    /// </summary>
+    /// <param name="ID">The glove to add or remove.</param>
+    /// <param name="thisButton">The button that is being pressed.</param>
     private void AddGlove(int ID, Button thisButton)
     {
         //treat the button as a toggle based on its current text
@@ -60,6 +70,11 @@ public class ConnectInterface:MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Connect or disconnect an existing glove.
+    /// </summary>
+    /// <param name="ID">The glove to connect or disconnect.</param>
+    /// <param name="thisButton">The button that is being pressed.</param>
     private void ConnectGlove(int ID, Button thisButton)
     {
         Text thisText = thisButton.transform.GetChild(0).GetComponent<Text>();
@@ -77,17 +92,29 @@ public class ConnectInterface:MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Update the panel's notification indicator.
+    /// </summary>
+    /// <param name="ID">The panel to update.</param>
+    /// <param name="lastNotification">The time since the last notification was received for this glove.</param>
     public void UpdateNotificationIndicator(int ID, double lastNotification)
     {
         transform.GetChild(ID).GetChild(5).gameObject.GetComponent<Image>().color = Color.Lerp(new Color(0.0f, 0.68f, 0.934f), new Color(0.0f, 0.68f, 0.934f, 0f), (float)(lastNotification / fadeTime));
     }
 	
+    /// <summary>
+    /// Highlight a panel's corresponding glove.
+    /// </summary>
+    /// <param name="ID">The glove to highlight.</param>
 	private void EnterPanel(int ID)
 	{
 		//if this panel's glove has been added, highlight it in the 3D view
 		if (mainInterface.gloves.ContainsKey(ID)) Camera.main.GetComponent<HighlightEffect>().highlightObject = mainInterface.gloves[ID].gameObject;
 	}
 	
+    /// <summary>
+    /// Remove the highlight from the glove.
+    /// </summary>
 	private void ExitPanel()
 	{
 		//remove the highlight effect from the glove

@@ -24,6 +24,10 @@ public class PairInterface:MonoBehaviour
 	private List<GameObject> leftPairSlots = new List<GameObject>();
 	private List<GameObject> rightPairSlots = new List<GameObject>();
 	
+    /// <summary>
+    /// Add a new pairblock controlling the handedness and pairing of a corresponding glove object.
+    /// </summary>
+    /// <param name="ID">The ID of the corresponding glove.</param>
 	public void AddPairBlock(int ID)
 	{
 		//find a slot in which this pairblock can be initialized
@@ -87,6 +91,10 @@ public class PairInterface:MonoBehaviour
 		FindSlot();
 	}
 	
+    /// <summary>
+    /// Remove a pairblock from the pairing interface.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to remove the pairblock for.</param>
     public void RemovePairBlock(int ID)
     {
         string name = ID.ToString();
@@ -105,6 +113,10 @@ public class PairInterface:MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Find a pairslot to add a pairblock to. Generates new pairslots if necessary.
+    /// </summary>
+    /// <returns>An empty pairslot.</returns>
 	private GameObject FindSlot()
 	{
 		//loop through all the pairslots
@@ -118,11 +130,15 @@ public class PairInterface:MonoBehaviour
 		return AddPair();
 	}
 	
+    /// <summary>
+    /// Adds a new pair of pairslots to the pairing interface.
+    /// </summary>
+    /// <returns>The left pairslot of the new pair.</returns>
 	private GameObject AddPair()
 	{
 		int pair = leftPairSlots.Count;
 		//make a new pairslot
-		GameObject leftSlot = CreatePairSlot();
+		GameObject leftSlot = AddPairSlot();
 		RectTransform leftRect = leftSlot.GetComponent<RectTransform>();
 		leftSlot.name = "L" + pair.ToString();
 		//place the pairslot's origin at the middle-top
@@ -133,7 +149,7 @@ public class PairInterface:MonoBehaviour
 		leftPairSlots.Add(leftSlot);
 		
 		//reproduce the process for a matching pairslot
-		GameObject rightSlot = CreatePairSlot();
+		GameObject rightSlot = AddPairSlot();
 		RectTransform rightRect = rightSlot.GetComponent<RectTransform>();
 		rightSlot.name = "R" + pair.ToString();
 		rightSlot.GetComponent<RectTransform>();
@@ -147,7 +163,11 @@ public class PairInterface:MonoBehaviour
 		return leftSlot;
 	}
 	
-	private GameObject CreatePairSlot()
+    /// <summary>
+    /// Creates a pairslot.
+    /// </summary>
+    /// <returns>The new pairslot.</returns>
+	private GameObject AddPairSlot()
 	{
 		//make a new pairslot
 		GameObject pairSlot = new GameObject();
@@ -160,6 +180,10 @@ public class PairInterface:MonoBehaviour
 		return pairSlot;
 	}
 	
+    /// <summary>
+    /// Drops a pairblock into a new pairslot.
+    /// </summary>
+    /// <param name="pairBlock">The pairblock that was just dropped.</param>
 	private void DropPairBlock(GameObject pairBlock)
 	{
 		//reassigns pairblock to a pairslot the mouse is over

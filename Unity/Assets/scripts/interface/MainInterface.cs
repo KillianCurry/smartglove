@@ -14,8 +14,6 @@ public class MainInterface:MonoBehaviour
 	[HideInInspector]
 	public Dictionary<int,HandController> gloves;
 
-    public bool testPoseMet;
-
     //manages mouse-based camera control
     private DragInterface dragInterface;
 	//manages glove connection panels
@@ -47,12 +45,16 @@ public class MainInterface:MonoBehaviour
     //get the time since the last notification on the specified glove
     [DllImport("smartglove", EntryPoint = "getLastNotification", CallingConvention = CallingConvention.Cdecl)]
     public static extern double getLastNotification(int gloveID);
+    //set the minimum and maximum rotations of each joint for a glove
     [DllImport("smartglove", EntryPoint = "setAngles")]
     public static extern void setAngles(int gloveID, IntPtr minAngles, IntPtr maxAngles);
 
+    /// <summary>
+    /// Initialize the interface.
+    /// </summary>
     private void Start()
 	{
-		//keep track of children interfaces
+		//keep track of sub-interfaces
 		MainInterface thisScript = GetComponent<MainInterface>();
 		dragInterface = transform.GetChild(0).gameObject.GetComponent<DragInterface>();
 		dragInterface.mainInterface = thisScript;
@@ -64,19 +66,16 @@ public class MainInterface:MonoBehaviour
 		gloves = new Dictionary<int,HandController>();
 		
 		//add new gloves to the library
-		string UUID1 = "{00601001-7374-7265-7563-6873656e7365}";
-		int bufferSize1 = UUID1.Length;
-		StringBuilder buffer1 = new StringBuilder(UUID1, bufferSize1);
-		addUUID(buffer1, ref bufferSize1);
-		string UUID2 = "{00000501-7374-7265-7563-6873656e7365}";
-		int bufferSize2 = UUID2.Length;
-		StringBuilder buffer2 = new StringBuilder(UUID2, bufferSize2);
-		addUUID(buffer2, ref bufferSize2);
-		
-		//add corresponding connection panels for the library's gloves
-		Populate();
+        GenerateGlove("00601001-7374-7265-7563-6873656e7365");
+        GenerateGlove("00000501-7374-7265-7563-6873656e7365");
+
+        //add corresponding connection panels for the library's gloves
+        Populate();
 	}
 
+    /// <summary>
+    /// Update each glove object with data from the library.
+    /// </summary>
     private void Update()
     {
         foreach (HandController glove in gloves.Values)
@@ -100,6 +99,20 @@ public class MainInterface:MonoBehaviour
         }
     }
 	
+    /// <summary>
+    /// Add a new UUID to the library so a corresponding glove can be added.
+    /// </summary>
+    /// <param name="UUID">The UUID to add to the library.</param>
+    private void GenerateGlove(string UUID)
+    {
+        int bufferSize = UUID.Length+2;
+        StringBuilder buffer = new StringBuilder("{" + UUID + "}", bufferSize);
+        addUUID(buffer, ref bufferSize);
+    }
+
+    /// <summary>
+    /// Populates the connection panel.
+    /// </summary>
 	private void Populate()
 	{
 		//retrieve the UUID list from the library
@@ -115,7 +128,9 @@ public class MainInterface:MonoBehaviour
 		}
 	}
 	
-	//update the orbit center to reflect changes in glove transforms
+	/// <summary>
+    /// Updates the camera orbit center to reflect new glove positions.
+    /// </summary>
 	public void UpdateOrbit()
 	{
 		Vector3 center = Vector3.zero;
@@ -129,6 +144,10 @@ public class MainInterface:MonoBehaviour
 		dragInterface.target = center;
 	}
 	
+    /// <summary>
+    /// Add new glove geometry to the world.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to add.</param>
 	public void AddGlove(int ID)
 	{
 		//create a new hand object with the ID
@@ -158,6 +177,10 @@ public class MainInterface:MonoBehaviour
 		UpdateOrbit();
 	}
 
+    /// <summary>
+    /// Remove existing glove geometry from the world.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to remove.</param>
     public void RemoveGlove(int ID)
     {
         //remove highlight effect
@@ -171,7 +194,11 @@ public class MainInterface:MonoBehaviour
         pairInterface.RemovePairBlock(ID);
     }
 	
-	//connect a given glove object
+	/// <summary>
+    /// Connect an existing glove object to the glove hardware using BLE.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to connect.</param>
+    /// <returns>True if the connection was successful.</returns>
 	public bool ConnectGlove(int ID)
 	{
         if (gloves[ID].connected) return true;
@@ -181,10 +208,18 @@ public class MainInterface:MonoBehaviour
             //write the exception from the DLL if the connection doesn't work
             Debug.Log("CONNECTION ERROR: 0x" + Marshal.GetLastWin32Error().ToString("X"));
         }
+        else
+        {
+            gloves[ID].SetZeroRotation();
+        }
         return gloves[ID].GetComponent<HandController>().connected;
 	}
 
-    //disconnect a given glove object
+    /// <summary>
+    /// Disconnect an existing glove object from the glove hardware.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to disconnect.</param>
+    /// <returns>True if the disconnection was successful.</returns>
     public bool DisconnectGlove(int ID)
     {
         if (!gloves[ID].connected) return true;
@@ -192,22 +227,27 @@ public class MainInterface:MonoBehaviour
         return !gloves[ID].connected;
     }
 	
-	//clear a given glove object's calibration data
+	/// <summary>
+    /// Clear a connected glove's autocalibration data.
+    /// </summary>
+    /// <param name="ID">The ID of the glove to clear.</param>
 	public void ClearGlove(int ID)
 	{
         gloves[ID].SetZeroRotation();
         clearCalibration(ID);
     }
 	
-	//called when quitting the application
+	/// <summary>
+    /// Disconnect the gloves and clean up the library when quitting the application.
+    /// </summary>
 	void OnApplicationQuit()
 	{
-		//disconnect all gloves so reading coroutines end
+		//disconnect all gloves
 		foreach (int ID in gloves.Keys)
 		{
             DisconnectGlove(ID);
 		}
-		//clean up the library
+		//clean up the unmanaged memory
 		closeLibrary();
 	}
 }

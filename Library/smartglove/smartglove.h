@@ -23,15 +23,12 @@
 #include <iostream>
 #include <fstream>
 #include "Glove.h"
-#include "Pose.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 	//Objects keeping track of individual glove data.
 	std::vector<Glove> gloves;
-	//Recorded poses.
-	std::vector<Pose> poses;
 	///<summary>Converts a UUID string to a handle.</summary>
 	///<param name="pGUID">The GUID to convert.</param>
 	///<returns>A HANDLE pointing to the peripheral device.</returns>
