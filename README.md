@@ -1,20 +1,18 @@
 # StretchSense Sensing Glove
-An open-source project to process data from the StretchSense sensing glove, for use by hobbyists, software developers, and makers.
+An open-source project to process data from the StretchSense sensing glove, for use by hobbyists, software developers, and makers. Currently supported on Windows.
 
 Includes:
 * Arduino code for an Arduino 101 with attached StretchSense SPI circuit.
-* C++ DLL code for a portable plugin that processes data from the Arduino
-* C# Unity code that demonstrates proper use of the DLL with tech demos
+* C++ DLL code that processes data from the Arduino
+* C# Unity code that demonstrates proper use of the DLL
 
 Basic Setup:
-* Attach the StretchSense ten-channel sensing circuit to the TinyTile via header pins and StretchSense shield.
-* Then, attach the stretch sensors to the sensing circuit. If using a five-sensor configuration, attach a sensor to every odd channel.
-* Download GloveReader.ino and write this program to the TinyTile.
-* Use the Arduino IDE's Serial Monitor to ensure the correct output is being sent by the TinyTile. You should see a list of 13 numbers, separated by commas. The first three numbers are the roll, pitch, and yaw of the gyroscope; the last ten are the ten channels of the sensing circuit.
-* Download the Library and compile it using Visual Studio (using x64, Release mode).
-* Download the Unity project and open in Unity.
-* Place the generated DLL from the x64/Release folder in the Assets/Plugins folder of the Unity project.
-* Enter Play mode. A hand should be generated. Enter the serial port number the TinyTile is connected to, then click the Connect Serial button in the inspector. The other buttons in the inspector should become active.
-* To calibrate the glove, first stretch out your fingers and point the glove toward the screen, palm down, then click Calibrate Minimum.
-* Then, squeeze your fingers inward and click Calibrate Maximum.
-* Finally, squeeze your thumb inward and click the '1' below Calibrate Maximum to calibrate the thumb individually.
+* Attach the Intel TinyTile to the StretchSense SPI circuit on the StretchSense sensing glove.
+* Download the [Arduino program](Arduino), set desired hardware parameters at the top of the program, and upload this program to the TinyTile. You can use the serial monitor or Bluetooth's BLE nRF toolbox application to ensure the glove is operating.
+* Download [library](Library) and compile it using Visual Studio (using Release mode).
+* Download the [Unity project](Unity).
+* Place the generated .dll file from the library's build folder in the Assets/Plugins folder of the Unity project.
+* Open the project, and navigate to MainInterface's Start() function, where UUIDs are generated. Enter the appropriate UUIDs corresponding to your gloves using GenerateGlove. Make sure the UUIDs are wrapped in curly braces.
+* Enter Play mode. Click 'Add' on the panel labelled with your desired UUID, and new glove geometry should be generated.
+* Next, click 'Connect'. If a BLE connection is established, the button will change to 'Disconnect', and a blue circle indicating connection will appear. If the glove stops sending BLE notifications, this circle will fade.
+* With a few clenches of your fingers and thumb, the glove will be automatically calibrated to your hand. If this calibration seems accurate, simply click the 'Reset' button and try again. 'Reset' also resets the IMU's heading, so make sure the glove is pointed at your screen when this happens.
