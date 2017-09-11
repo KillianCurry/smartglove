@@ -66,8 +66,10 @@ public class MainInterface:MonoBehaviour
 		gloves = new Dictionary<int,HandController>();
 		
 		//add new gloves to the library
+        GenerateGlove("00001001-7374-7265-7563-6873656e7365");
         GenerateGlove("00601001-7374-7265-7563-6873656e7365");
         GenerateGlove("00000501-7374-7265-7563-6873656e7365");
+        GenerateGlove("00600501-7374-7265-7563-6873656e7365");
 
         //add corresponding connection panels for the library's gloves
         Populate();

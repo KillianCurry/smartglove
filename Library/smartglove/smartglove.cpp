@@ -303,7 +303,6 @@ extern "C" {
 				//otherwise, use autocalibration limits to set glove's processed stretch value
 				else
 					gloves[gloveID].stretch[i] = (double)(gloves[gloveID].stretchRaw[i] - gloves[gloveID].minValues[i]) / (double)(gloves[gloveID].maxValues[i] - gloves[gloveID].minValues[i]);
-
 			}
 		}
 		//notification is IMU characteristic (if !hasIMU, imuHandle will not be initialized)
@@ -387,6 +386,10 @@ extern "C" {
 		//loop through again, adjusting the values from 0-1 to the desired angles
 		for (int i = 0; i < 15; i++)
 		{
+			//if the value is NaN, set it to the lower angular limit
+			if (values[i + 3] != values[i + 3])
+				values[i + 3] = 0;
+
 			values[i + 3] *= gloves[gloveID].maxAngles[i];
 			values[i + 3] += gloves[gloveID].minAngles[i];
 		}

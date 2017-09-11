@@ -7,6 +7,7 @@
 //HARDWARE SPECIFICATIONS
 //frequency in Hz for updates to the BLE, IMU, and SD
 #define   FREQUENCY_BLE_NEW_SAMPLE      12.5
+//allowed values for IMU frequency are 12.5,25,50,100,200,400,800,1600
 #define   FREQUENCY_IMU_NEW_SAMPLE      25
 #define   FREQUENCY_SD_NEW_SAMPLE       40
 //number of channels on the SPI circuit
@@ -182,9 +183,9 @@ void setup() {
   microsPerReading_IMU = 1000000 / FREQUENCY_IMU_NEW_SAMPLE;
   // start the IMU and filter
   CurieIMU.begin();
-  //CurieIMU.setGyroRate(25);
-  //CurieIMU.setAccelerometerRate(25);
-  filter.begin(25);
+  CurieIMU.setGyroRate(FREQUENCY_IMU_NEW_SAMPLE);
+  CurieIMU.setAccelerometerRate(FREQUENCY_IMU_NEW_SAMPLE);
+  filter.begin(FREQUENCY_IMU_NEW_SAMPLE);
 
   // Set the accelerometer range to 2G
   CurieIMU.setAccelerometerRange(2);
