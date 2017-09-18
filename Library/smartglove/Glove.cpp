@@ -24,13 +24,13 @@ void Glove::parseUUID(std::string _UUID)
 {
 	//first three digits indicate IMU
 	//000 = no IMU, 006 = IMU
-	if (_UUID.substr(1, 3) == "006") hasIMU = true;
+	if (_UUID.substr(1, 1) == "6") hasIMU = true;
 	else hasIMU = false;
 	//initialize IMUraw even if no IMU exists, just in case
 	imuRaw = std::vector<unsigned short>(6, 0);
 	//next three digits indicate number of sensors
 	//005 = 5 sensors, 010 = 10 sensors
-	sensorCount = std::stoi(_UUID.substr(4, 3));
+	sensorCount = std::stoi(_UUID.substr(2, 2));
 	//initialize stretch sensor inputs accordingly
 	stretchRaw = std::vector<unsigned short>(sensorCount, 0);
 	minValues = std::vector<unsigned short>(sensorCount, USHRT_MAX);

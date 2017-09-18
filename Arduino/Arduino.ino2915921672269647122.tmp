@@ -144,6 +144,10 @@ void setup() {
   microsPrevious_BLE = micros();
   microsPerReading_BLE = 1000000 / FREQUENCY_BLE_NEW_SAMPLE; //12.5 Hz
 
+  Serial.print("b");
+  blePeripheral.setLocalName("StretchSense_glove01"); //broadcast device name
+  blePeripheral.setDeviceName("StretchSense_glove01");
+
   //UUID SPECIFICATIONS
   //first digit: IMU (0 = none, 6 = 6DoF)
   //next two digits: sensor count (10 = 10-sensor, 05 = 5-sensor)
@@ -163,9 +167,6 @@ void setup() {
   {
     idString = "0" + idString;
   }
-  //name glove
-  blePeripheral.setLocalName(("StretchSense Glove " + idString).c_str()); //broadcast device name
-  blePeripheral.setDeviceName(("StretchSense Glove " + idString).c_str());
   //store front and back of string, middle is service/characteristic identifier
   String UUIDfront = imuString + chanString + idString;
   String UUIDback = "-7374-7265-7563-6873656e7365";

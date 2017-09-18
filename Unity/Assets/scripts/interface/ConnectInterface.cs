@@ -21,8 +21,7 @@ public class ConnectInterface:MonoBehaviour
 		GameObject panel = Instantiate((GameObject)Resources.Load("prefabs/Glove Panel", typeof(GameObject)), transform);
 		//position the panel in the list (stack from bottom to top)
 		panel.transform.localPosition += Vector3.up * (35f * (transform.childCount-1)+5f);
-		panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + ID.ToString();
-		
+        panel.name = panel.transform.GetChild(0).GetComponent<Text>().text = "Glove " + UUID.Substring(4, 3);
 		//set up event system
 		EventTrigger trigger = (EventTrigger)panel.AddComponent(typeof(EventTrigger));
 		//when hovering mouse over panel, highlight corresponding glove
@@ -33,7 +32,7 @@ public class ConnectInterface:MonoBehaviour
 		trigger.triggers.Add(new EventTrigger.Entry());
 		trigger.triggers[1].eventID = EventTriggerType.PointerExit;
 		trigger.triggers[1].callback.AddListener(state => ExitPanel());
-		panel.transform.GetChild(1).GetComponent<Text>().text = UUID;
+		panel.transform.GetChild(1).GetComponent<Text>().text = ParseUUID(UUID);
         //set up buttons
         Button addButton = panel.transform.GetChild(2).GetComponent<Button>();
         addButton.onClick.AddListener(() => AddGlove(ID, addButton));
@@ -42,6 +41,22 @@ public class ConnectInterface:MonoBehaviour
         Button clearButton = panel.transform.GetChild(4).GetComponent<Button>();
         clearButton.onClick.AddListener(() => mainInterface.ClearGlove(ID));
 	}
+
+    /// <summary>
+    /// Parse a UUID to find a glove's hardware.
+    /// </summary>
+    /// <param name="UUID">The UUID to be parsed.</param>
+    /// <returns>A string describing the glove's hardware.</returns>
+    private string ParseUUID(string UUID)
+    {
+        string hardwareStr = "";
+        //find the amount of channels
+        hardwareStr += UUID.Substring(2, 2).TrimStart(new char[]{'0'});
+        hardwareStr += " channels";
+        //find whether the glove is equipped with an IMU
+        if (UUID.Substring(1, 1).Equals("6")) hardwareStr += " and IMU";
+        return hardwareStr;
+    }
 
     /// <summary>
     /// Add a new glove to the world, or remove a glove from the world.

@@ -66,10 +66,10 @@ public class MainInterface:MonoBehaviour
 		gloves = new Dictionary<int,HandController>();
 		
 		//add new gloves to the library
-        GenerateGlove("00001001-7374-7265-7563-6873656e7365");
-        GenerateGlove("00601001-7374-7265-7563-6873656e7365");
-        GenerateGlove("00000501-7374-7265-7563-6873656e7365");
-        GenerateGlove("00600501-7374-7265-7563-6873656e7365");
+        GenerateGlove("61000001-7374-7265-7563-6873656e7365");
+        GenerateGlove("61000101-7374-7265-7563-6873656e7365");
+        GenerateGlove("01000001-7374-7265-7563-6873656e7365");
+        GenerateGlove("00500101-7374-7265-7563-6873656e7365");
 
         //add corresponding connection panels for the library's gloves
         Populate();
@@ -86,9 +86,10 @@ public class MainInterface:MonoBehaviour
             double[] data = new double[18];
             IntPtr ptr = readGlove(glove.ID);
             Marshal.Copy(ptr, data, 0, 18);
-            
+
             //copy orientation data
-            glove.palmOrientation = new Vector3((float)data[0], (float)data[2], (float)data[1]);
+            //comes as roll pitch yaw but unity needs it as pitch yaw roll
+            glove.palmOrientation = Quaternion.Euler((float)data[0], (float)data[2], (float)data[1]);
 
             //read finger rotation values
             for (int i = 0; i < 15; i++)

@@ -29,7 +29,7 @@ public class HandController:MonoBehaviour
 
 	//vector of the x, y, and z rotation
     [HideInInspector]
-	public Vector3 palmOrientation;
+	public Quaternion palmOrientation;
 	
 	//is the BLE connected?
 	[HideInInspector]
@@ -105,7 +105,7 @@ public class HandController:MonoBehaviour
 			if (r % 3 == 0) spread = ((((r/3)-2)*5)*((90f-(float)fingerRotations[r])/90f));
             joints[r].localRotation = Quaternion.RotateTowards(joints[r].localRotation, Quaternion.Euler((float)fingerRotations[r], 0f, spread), rotationSpeed * Time.deltaTime);
 		}
-		if (connected) this.transform.localRotation = zeroRotation * Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z);
+        if (connected) this.transform.localRotation = zeroRotation * palmOrientation;
 	}
 
     /// <summary>
@@ -113,7 +113,7 @@ public class HandController:MonoBehaviour
     /// </summary>
     public void SetZeroRotation()
     {
-        zeroRotation = Quaternion.Inverse(Quaternion.Euler(palmOrientation.x, palmOrientation.y, palmOrientation.z));
+        zeroRotation = Quaternion.Inverse(palmOrientation);
     }
 	
     /// <summary>

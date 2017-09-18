@@ -354,9 +354,9 @@ extern "C" {
 		//allocate enough memory for xyz orientation + 15 finger joints
 		std::vector<double> values(18, 0);
 		//write orientation data
-		values[0] = ((double)gloves[gloveID].imuRaw[0])/100.0;
-		values[1] = ((double)gloves[gloveID].imuRaw[1])/100.0;
-		values[2] = ((double)gloves[gloveID].imuRaw[2])/100.0;
+		values[0] = ((double)gloves[gloveID].imuRaw[0]) / 100.0;
+		values[1] = ((double)gloves[gloveID].imuRaw[1]) / 100.0;
+		values[2] = ((double)gloves[gloveID].imuRaw[2]) / 100.0;
 		for (int i = 0; i < gloves[gloveID].sensorCount; i++)
 		{
 			// 5 SENSOR MODEL
@@ -380,18 +380,18 @@ extern "C" {
 			else
 			{
 				//output calibrated stretch value to the glove
-				values[i + 3] = gloves[gloveID].stretch[i];
+				values[3 + i] = gloves[gloveID].stretch[i];
 			}
 		}
 		//loop through again, adjusting the values from 0-1 to the desired angles
 		for (int i = 0; i < 15; i++)
 		{
 			//if the value is NaN, set it to the lower angular limit
-			if (values[i + 3] != values[i + 3])
-				values[i + 3] = 0;
+			if (values[3 + i] != values[3 + i])
+				values[3 + i] = 0;
 
-			values[i + 3] *= gloves[gloveID].maxAngles[i];
-			values[i + 3] += gloves[gloveID].minAngles[i];
+			values[3 + i] *= gloves[gloveID].maxAngles[i];
+			values[3 + i] += gloves[gloveID].minAngles[i];
 		}
 
 		//return a pointer to the vector
