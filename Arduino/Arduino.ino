@@ -11,12 +11,12 @@
 #define   FREQUENCY_IMU_NEW_SAMPLE      50
 #define   FREQUENCY_SD_NEW_SAMPLE       40
 //number of channels on the SPI circuit
-#define   CHANNELS                      10
+#define   CHANNELS                      5
 //unique ID, to distinguish this glove from others with identical hardware
-#define   ID                            2
+#define   ID                            0
 //flags to include certain sections of code
 //6DoF inertial motion unit using Madgwick algorithm
-#define   ENABLE_IMU
+//#define   ENABLE_IMU
 //Bluetooth Low-Energy communication for interface with the C++ library
 #define   ENABLE_BLE
 //logging to Secure Digital card
@@ -66,7 +66,7 @@ int RawDataIMU[20];
 // SSL_SPI declarations
 #ifdef ENABLE_SSL_SPI
 const int InterruptPin   =    6;
-const int chipSelectPin_SSL  =    10;
+const int chipSelectPin_SSL  =    7;
 
 // ---- DEFINITIONS ----//
 

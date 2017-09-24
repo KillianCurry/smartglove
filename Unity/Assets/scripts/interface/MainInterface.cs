@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Text;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -69,7 +70,7 @@ public class MainInterface:MonoBehaviour
         GenerateGlove("61000001-7374-7265-7563-6873656e7365");
         GenerateGlove("61000101-7374-7265-7563-6873656e7365");
         GenerateGlove("01000001-7374-7265-7563-6873656e7365");
-        GenerateGlove("00500101-7374-7265-7563-6873656e7365");
+        GenerateGlove("00500001-7374-7265-7563-6873656e7365");
 
         //add corresponding connection panels for the library's gloves
         Populate();
@@ -97,7 +98,6 @@ public class MainInterface:MonoBehaviour
                 //change 0-1 to degrees
                 glove.fingerRotations[i] = data[i + 3];
             }
-
             connectInterface.UpdateNotificationIndicator(glove.ID, getLastNotification(glove.ID));
         }
     }
