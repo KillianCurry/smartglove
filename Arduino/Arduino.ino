@@ -11,7 +11,7 @@
 #define   FREQUENCY_IMU_NEW_SAMPLE      50
 #define   FREQUENCY_SD_NEW_SAMPLE       40
 //number of channels on the SPI circuit
-#define   CHANNELS                      5
+#define   CHANNELS                      10
 //unique ID, to distinguish this glove from others with identical hardware
 #define   ID                            0
 //flags to include certain sections of code
@@ -66,7 +66,7 @@ int RawDataIMU[20];
 // SSL_SPI declarations
 #ifdef ENABLE_SSL_SPI
 const int InterruptPin   =    6;
-const int chipSelectPin_SSL  =    7;
+const int chipSelectPin_SSL  =    10;
 
 // ---- DEFINITIONS ----//
 
